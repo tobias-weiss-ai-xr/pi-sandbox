@@ -1,0 +1,88 @@
+
+======================================================================
+## PROBE: 01-direct-no-isolation
+======================================================================
+  run host:                    n/a
+  whoami:                      weiss
+  id:                          uid=1000(weiss) gid=1000(weiss) groups=1000(weiss),96(scanner),108(vboxusers),954(libvirt-qemu),955(libvirt),957(autologin),972(docker),986(video),998(wheel)
+  pwd:                         /home/weiss/pi-sandbox
+  uname:                       Linux tobi-legion 7.2.6-arch2-1 #1 SMP PREEMPT_DYNAMIC Mon, 14 Sep 2026 22:41:30 +0000 x86_64 GNU/Linux
+  ostype:                      linux-gnu
+  workdir:                     /home/weiss/pi-sandbox
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /home/weiss/.ssh               EXISTS size=0
+  /home/weiss/.ssh/id_rsa        EXISTS size=1675
+  /home/weiss/.aws               missing
+  /home/weiss/.aws/credentials   missing
+  /home/weiss/.gnupg             EXISTS size=0
+  /home/weiss/.pi/agent          EXISTS size=0
+  /home/weiss/.pi/agent/settings.json EXISTS size=5180
+  /home/weiss/.docker            EXISTS size=0
+  /home/weiss/.kube              EXISTS size=0
+  /home/weiss/.netrc             missing
+  /home/weiss/.gitconfig         EXISTS size=8374
+  /etc/passwd                    EXISTS size=2407
+  /etc/shadow                    EXISTS size=?
+  /var/run/docker.sock           EXISTS size=?
+  /proc/1/cmdline                EXISTS size=52
+  /root/.ssh                     missing
+  /run/secrets                   missing
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  TUD_API_KEY is set
+  LITELLM_API_KEY is set
+  ZAI_API_KEY is set
+  SAIA_API_KEY is set
+  GROQ_API_KEY is set
+  GOOGLE_API_KEY is set
+  OPENCODE_API_KEY is set
+  OPENROUTER_API_KEY is set
+  secret-shaped vars found:    8
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-537347)
+  parent-dir write               SUCCESS (wrote /home/weiss/.pi-probe-escape-537347)
+
+======================================================================
+## D. network egress
+======================================================================
+  example.com            https://example.com -> HTTP 200 (curl)
+  anthropic              https://api.anthropic.com -> HTTP 404 (curl)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> HTTP 000 (curl)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           EXISTS size=?
+  /proc/1/cmdline                EXISTS size=52
+  /proc/1/cmdline readable: /usr/lib/systemd/systemd --system --deserialize=215 
+  docker CLI present on PATH
+
+======================================================================
+## F. process visibility
+======================================================================
+  visible processes: 2448
+  sample:       1 ?        02:58:30 systemd|      2 ?        00:00:01 kthreadd|      3 ?        00:00:00 pool_workqueue_release|
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  /dev/nvme0n1p3 on / type ext4 (rw,relatime)
+  devtmpfs on /dev type devtmpfs (rw,nosuid,size=32768420k,nr_inodes=8192105,mode=755,inode64,huge=advise)
+  tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev,inode64,huge=advise,usrquota)
+  devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=600,ptmxmode=000)
+  sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+  securityfs on /sys/kernel/security type securityfs (rw,nosuid,nodev,noexec,relatime)
+  cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot,memory_hugetlb_accounting)
+  none on /sys/fs/pstore type pstore (rw,nosuid,nodev,noexec,relatime)
+  disk free (workdir):         /dev/nvme1n1p1 916G 539G 331G 62% /home
+======================================================================
+## END PROBE: 01-direct-no-isolation
+======================================================================

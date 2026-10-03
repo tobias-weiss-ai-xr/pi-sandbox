@@ -1,0 +1,82 @@
+
+======================================================================
+## PROBE: 03-legion-docker-leaky-mounts
+======================================================================
+  run host:                    ce84a209a20e
+  whoami:                      root
+  id:                          uid=0(root) gid=0(root) groups=0(root)
+  pwd:                         /workspace
+  uname:                       Linux ce84a209a20e 7.2.6-arch2-1 #1 SMP PREEMPT_DYNAMIC Mon, 14 Sep 2026 22:41:30 +0000 x86_64 GNU/Linux
+  ostype:                      linux-gnu
+  workdir:                     /workspace
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /root/.ssh                     EXISTS size=0
+  /root/.ssh/id_rsa              EXISTS size=1675
+  /root/.aws                     missing
+  /root/.aws/credentials         missing
+  /root/.gnupg                   missing
+  /root/.pi/agent                EXISTS size=0
+  /root/.pi/agent/settings.json  EXISTS size=5180
+  /root/.docker                  missing
+  /root/.kube                    missing
+  /root/.netrc                   missing
+  /root/.gitconfig               missing
+  /etc/passwd                    EXISTS size=878
+  /etc/shadow                    EXISTS size=500
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=15
+  /root/.ssh                     EXISTS size=0
+  /run/secrets                   missing
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  ANTHROPIC_API_KEY is set
+  OPENAI_API_KEY is set
+  AWS_SECRET_ACCESS_KEY is set
+  secret-shaped vars found:    3
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-1)
+  parent-dir write               SUCCESS (wrote //.pi-probe-escape-1)
+
+======================================================================
+## D. network egress
+======================================================================
+  example.com            https://example.com -> 200 (node-fetch)
+  anthropic              https://api.anthropic.com -> 404 (node-fetch)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> ERR:undefined (node-fetch)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=15
+  /proc/1/cmdline readable: bash /probe.sh 
+  docker CLI absent
+
+======================================================================
+## F. process visibility
+======================================================================
+  ps unavailable
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  overlay on / type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/3ENSDFF7IOUQF24SLO3XU2N4TW:/var/lib/docker/overlay2/l/LD35BKXEN6CVNVKGT7MU4NUNXX:/var/lib/docker/overlay2/l/FFTAQS5JGWSPTFYPFQU33HXFUL:/var/lib/docker/overlay2/l/HRBFKGBC6IWWJH2VIJ34D7JCKC:/var/lib/docker/overlay2/l/5N4VC664FWPYT3RA5ELZFOQNO6:/var/lib/docker/overlay2/l/FFVYT35WG2AMFQ4FFJSWQMPAVI:/var/lib/docker/overlay2/l/6QSENRLV7ORMZZA6QWTF4FPGCM:/var/lib/docker/overlay2/l/OZEPIIXDYHA3U3M5W4ABL6EFV3:/var/lib/docker/overlay2/l/IZSZFVXNDEZLAM53X76LBNBE6W,upperdir=/var/lib/docker/overlay2/7829acf43611ff4e8e44b9cdba117bfc88050e68ce877c7d531e07544466ff5c/diff,workdir=/var/lib/docker/overlay2/7829acf43611ff4e8e44b9cdba117bfc88050e68ce877c7d531e07544466ff5c/work,index=off)
+  proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+  tmpfs on /dev type tmpfs (rw,nosuid,size=65536k,mode=755,inode64,huge=advise)
+  devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666)
+  sysfs on /sys type sysfs (ro,nosuid,nodev,noexec,relatime)
+  cgroup on /sys/fs/cgroup type cgroup2 (ro,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot,memory_hugetlb_accounting)
+  mqueue on /dev/mqueue type mqueue (rw,nosuid,nodev,noexec,relatime)
+  shm on /dev/shm type tmpfs (rw,nosuid,nodev,noexec,relatime,size=65536k,inode64,huge=advise)
+  disk free (workdir):         /dev/nvme1n1p1 916G 539G 332G 62% /workspace
+======================================================================
+## END PROBE: 03-legion-docker-leaky-mounts
+======================================================================
