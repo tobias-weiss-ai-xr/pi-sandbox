@@ -2,35 +2,10 @@
 
 [![ci](https://github.com/tobias-weiss-ai-xr/pi-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/tobias-weiss-ai-xr/pi-sandbox/actions/workflows/ci.yml)
 
-Empirical comparison of the ways to sandbox **Pi**'s model-generated commands.
-Each method is measured with a fixed escape-attempt probe, on three hosts —
-**Windows 11 + Git Bash + Docker Desktop (WSL2)**, **native Linux (legion)** and
-**macOS (Colima)** — plus a **product-function test** (does pi actually *work* as an
-agent?) and a **real exfiltration test**. Raw outputs are committed under `results/`
-as reproducible evidence.
-
-> **Two results that reframe the usual advice**
-> 1. The *recommended* open-network setup is safe only against *accidental* leaks — a
->    deliberately malicious agent (or extension) can exfiltrate the one real key you pass.
-> 2. The *hardened* flags as documented **don't run pi at all** — `--read-only` makes the
->    session directory unwritable, so pi crashes on startup.
-
-Read **[`THREAT_MODEL.md`](THREAT_MODEL.md)** before quoting a "safe/unsafe" verdict, and
-**[`REPORT.md`](REPORT.md)** (incl. §9) for the analysis.
-
-## Findings at a glance
-
-| method | host secrets | egress | runs pi? | exfil of the injected key |
-|--------|:---:|:---:|:---:|:---:|
-| direct on host (no isolation) | ❌ exposed | open | ✅ | n/a |
-| `02` Docker recommended | ✅ hidden | open | ✅ | ❌ **leaks** |
-| `03` Docker leaky mounts | ❌ exposed | open | ✅ | (mounts decide exposure) |
-| `04` Docker hardened | ✅ hidden | ❌ none | ❌ **crashes** | ✅ blocked |
-| `09` non-root hardened | ✅ hidden | ❌ none | ⚠️ local model only | ✅ blocked |
-| `05` gVisor | ✅ hidden | ❌ none | — | ✅ blocked |
-| `07` secrets-broker | ✅ placeholder only | open | ✅ | real key never enters |
-
-Full matrix (incl. adversarial cases) and evidence links: [`THREAT_MODEL.md`](THREAT_MODEL.md).
+Empirical comparison of the ways to sandbox **Pi**'s model-generated commands —
+measured with a fixed escape-attempt probe on three hosts, plus a product-function
+test and a real exfiltration test. Raw outputs are committed under `results/`.
+Analysis in [`REPORT.md`](REPORT.md); adversaries in [`THREAT_MODEL.md`](THREAT_MODEL.md).
 
 ## Quick start
 
@@ -43,8 +18,27 @@ make sandbox     # interactive non-root sandbox with the current dir mounted
 ```
 
 Requirements: Docker (`docker build`/`docker run`). On macOS the tested backend is
-**Colima**; on Windows, Docker Desktop with WSL2. No other tooling is required for
-`make check` (pure shell).
+**Colima**; on Windows, Docker Desktop with WSL2. `make check` needs nothing but a shell.
+
+## Findings at a glance
+
+> **Two results that reframe the usual advice**
+> 1. The *recommended* open-network setup is safe only against *accidental* leaks — a
+>    deliberately malicious agent (or extension) can exfiltrate the one real key you pass.
+> 2. The *hardened* flags as documented **don't run pi at all** — `--read-only` makes the
+>    session directory unwritable, so pi crashes on startup.
+
+| method | host secrets | egress | runs pi? | exfil of the injected key |
+|--------|:---:|:---:|:---:|:---:|
+| direct on host (no isolation) | ❌ exposed | open | ✅ | n/a |
+| `02` Docker recommended | ✅ hidden | open | ✅ | ❌ **leaks** |
+| `03` Docker leaky mounts | ❌ exposed | open | ✅ | (mounts decide exposure) |
+| `04` Docker hardened | ✅ hidden | ❌ none | ❌ **crashes** | ✅ blocked |
+| `09` non-root hardened | ✅ hidden | ❌ none | ⚠️ local model only | ✅ blocked |
+| `05` gVisor | ✅ hidden | ❌ none | — | ✅ blocked |
+| `07` secrets-broker | ✅ placeholder only | open | ✅ | real key never enters |
+
+Full matrix (incl. adversarial cases) and evidence links: [`THREAT_MODEL.md`](THREAT_MODEL.md).
 
 ## Layout
 
