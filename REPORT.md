@@ -287,11 +287,11 @@ only** — never secret contents. Raw evidence: `results/01…08-*.txt`.
 
 ---
 
-## 6. macOS run (this document's update)
+## 7. macOS run (this document's update)
 
 Re-ran the same eval on a **macOS 15.7.9 / x86_64** host, Docker 29.7.2 client
 through **Colima** (Linux VM backend). Raw evidence:
-`results/01..04/-08-macos-*.txt`.
+`results/01..04-macos-*.txt` and `results/08-macos-timing.txt`.
 
 | Rank | Method | Boundary strength | On this Mac today? |
 |---|---|---|---|
@@ -327,7 +327,7 @@ QEMU + Node ≥23.6 (both absent).
 
 ---
 
-## 7. Sandbox plugins (pi-saia-plugin + ponytail + rtk + caveman)
+## 8. Sandbox plugins (pi-saia-plugin + ponytail + rtk + caveman)
 
 The `pi-sandbox:latest` image now **bakes in four packages** (see `README.md`,
 `docker/Dockerfile.pi`). Verified in a fresh container (no persistent config),
