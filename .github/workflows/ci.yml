@@ -10,7 +10,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: shellcheck + bash -n
@@ -22,7 +22,7 @@ jobs:
     # (consistent with the repo's "warnings are surfaces, not gates" policy).
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: actionlint (workflows)
         run: docker run --rm -v "$PWD:/w" -w /w rhysd/actionlint:latest -color
       - name: yamllint (.github)
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build image
         run: make image
       - name: Trivy image scan (advisory)
@@ -85,7 +85,7 @@ jobs:
     # No Docker needed: asserts the committed results corpus still holds.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Assert committed results satisfy their invariants
         run: make check
 
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build image
         run: make image
       - name: Bundled plugins load (9 checks)
