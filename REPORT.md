@@ -182,9 +182,83 @@ on Windows: undocumented, needs UAC + system user + WFP filter, broken without c
 
 See §1. Everything exposed. Fine only for throwaway work in disposable VMs/containers.
 
+### 3.7 Native Linux verification (legion) ✅
+
+`results/01-legion-direct.txt`, `02-legion-docker-recommended.txt`, `03-legion-docker-leaky-mounts.txt`, `04-legion-docker-hardened.txt`
+
+Re-ran the identical probe + image on **legion** — Arch Linux (kernel 7.2.6-arch2), **native** Docker 29.8.1 (no WSL2/Docker Desktop), host pi 0.99.2. Purpose: check whether the Windows findings were Docker-Desktop-specific.
+
+**They are not.** Every conclusion reproduces on native Linux:
+
+- **Baseline exposure equivalent** — real `~/.ssh/id_rsa` (1,675 B, same file as the Windows host), real `~/.pi/agent/settings.json` (5,180 B), **8 secret-shaped env vars** (Windows: 6) — legion carries `TUD_API_KEY`, `ZAI_API_KEY`, `GROQ_API_KEY`, `OPENCODE_API_KEY` in addition. Same class of threat, more keys.
+- **Recommended setup identical** — containerized run sees exactly 1 env var (the injected dummy); host `~/.ssh`/`~/.pi/agent` absent; `docker` CLI absent; `/proc/1/cmdline` is the container's own `bash /probe.sh` (PID namespace isolated); `mount` shows native overlay with read-only `/sys`. Both gaps reproduce: open egress (example.com → 200 via node-fetch) and writable container root.
+- **Leaky mounts leak the same** — `id_rsa` 1,675 B + `settings.json` 5,180 B + 3 vars appear. Mounts, not the host OS, decide exposure.
+- **Hardened identical** — `--network none --read-only --tmpfs /tmp`: all 3 network probes `ERR:undefined`; parent write blocked; `/tmp` works (tmpfs).
+
+**Linux-only friction is gone, Windows-only friction is gone too** — no `MSYS_NO_PATHCONV=1`, no `pwd -W`: plain Docker paths work. But the repo's Windows runner (`harness/run-docker-probes.sh`) will *not* run on Linux as-is — it encodes Git Bash path handling (invariants: `MSYS_NO_PATHCONV=1`, `pwd -W`). The legion run used the equivalent plain `docker run` invocations (the exact commands are the same minus `-W`/env); see the worked set below.
+
+```bash
+# on legion (or any native Linux host):
+P=$PWD/harness/probe.sh
+docker build -q -t pi-sandbox -f docker/Dockerfile.pi .
+docker run --rm -e PROBE_NAME=02-docker-recommended -e PROBE_WORKDIR=/workspace \
+  -v "$P:/probe.sh:ro" -e ANTHROPIC_API_KEY=dummy -v "$PWD:/workspace" \
+  -v pi-agent-home:/root/.pi/agent --entrypoint bash pi-sandbox /probe.sh
+# + the leaky/hardened variants from harness/run-docker-probes.sh (drop the MSYS bits)
+```
+
+**Takeaway:** the report's conclusions and the Dockerfile are host-independent; expect the same boundary (and the same two gaps, closed by the same two flags) on any Docker host.
+
 ---
 
-## 4. Recommendations
+## 4. Tooling & plugins: what each boundary actually confines
+
+Pi's attack/support surface is not just `!`/bash — built-in file tools, extensions (custom
+SDK tools), hooks, and MCP servers are all part of the process. A sandbox that only wraps
+bash defends less than it looks, and a container that confines Pi also confines every plugin.
+Two rules dominate:
+
+1. **In-process surfaces share Pi's boundary.** Extensions, custom tools, and hooks run
+   *inside* Pi's process. In Docker-class methods they are in the container (confined, but
+   must be installed/authed there); in Gondolin and the OS-level extension they stay on the
+   host (unconfined).
+2. **MCP servers are children.** stdio MCP servers fork from Pi, so they live wherever Pi
+   lives; remote MCP servers are just network — blocked by `--network none`.
+
+| Surface | Plain Docker | Docker Sandboxes (`sbx`) | OpenShell | Gondolin | OS-level ext |
+|---|---|---|---|---|---|
+| `!` commands / bash tool | confined | confined | confined | micro-VM | wrapped (allowlist) |
+| built-in file tools (read/write/edit/ls/grep) | container FS + mounted workspace | same | sandbox FS (no bind mounts) | VM, `/workspace` write-through | host, not wrapped |
+| extensions & custom tools | must be installed inside image/agent volume | same (in-sandbox agent dir) | host-side, policy-fenced | host, outside VM | host, bypass sandbox |
+| stdio MCP servers | inside container — needs node modules in image | same | policy | host | host |
+| remote MCP servers | network — off with `--network none` | per-sandbox network | policy | open | domain allowlist |
+| git push / npm install / any egress | open by default; off (hardened) | managed | policy | open | allowlisted domains only |
+| credential store `~/.pi/agent` | named volume (fresh) — plugins need re-auth inside | in-sandbox; provider keys proxied only | credential policy | inherited host env | untouched (host) |
+
+Consequences, in practice:
+
+- **Plain Docker is a whole-Pi boundary, which is exactly its strength and its tax.**
+  Because extensions/custom tools run in the container, the image must ship them
+  (`npm i -g <ext>`, or a seeded named volume `pi-agent-home`) — the "extensions must work
+  in the container" con from §3.1. Plugin secrets live in `settings.json`, which the
+  recommended setup deliberately does *not* mount from the host; the `-e API_KEY` pattern
+  covers provider keys but not plugin tokens, so plugins need re-authentication inside.
+- **Gondolin and the OS-level extension are bash-jails, not Pi boundaries.**
+  `read`/`write`/`edit` and every SDK extension (memory, graphiti, custom MCP calls) run on
+  the host with full access. Useful only if the threat you care about is specifically
+  model-generated shell commands — for the credentialed plugin surface they add nothing.
+- **`--network none` (hardened) silently kills plugin functionality.** Anything
+  network-backed — remote MCP servers, git remotes, `npm install`, browser tooling,
+  host daemons — is gone. Hardening is a per-task choice: offline/file work → hardened;
+  anything touching the cluster → recommended and accept egress.
+- **Reachable host daemons are the escape valve.** When a plugin needs a host-only service
+  (Ableton, email IMAP, a local MCP server), don't mount the host — forward the port
+  (legion's socat pattern: `host:10801 → ai1:8888`) and run the Docker boundary with
+  network allowed. Plugin stays host-side by design; Pi-in-container gets a one-port view.
+
+---
+
+## 5. Recommendations
 
 - **Default on this host:** Plain Docker with the documented mounts. Only boundary that's
   strong *and* verified working. Add `--network none` whenever the task doesn't need net.
@@ -198,7 +272,7 @@ See §1. Everything exposed. Fine only for throwaway work in disposable VMs/cont
 
 ---
 
-## 5. Reproduce
+## 6. Reproduce
 
 ```bash
 docker build -t pi-sandbox -f docker/Dockerfile.pi .
