@@ -34,6 +34,8 @@ jobs:
         run: make image
       - name: Bundled plugins load (9 checks)
         run: make verify
+      - name: Unit-test the probe in a controlled container
+        run: make test
       - name: Seed a fake host home (so the leaky 03 probe has secrets to expose)
         run: |
           mkdir -p ~/.pi/agent ~/.ssh
@@ -42,6 +44,10 @@ jobs:
       - name: Regenerate Docker probe results (linux)
         run: make probes
       - name: Re-assert invariants (incl. fresh linux results)
+        run: make check
+      - name: Develop a skeleton-research repo inside the sandbox (make example)
+        run: make example
+      - name: Re-assert invariants after the research example
         run: make check
       - name: Upload fresh probe results
         if: always()

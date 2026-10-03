@@ -13,7 +13,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 HARNESS := harness
 
-.PHONY: help image verify check probes smoke exfil sandbox example lint clean
+.PHONY: help image verify check test probes smoke exfil sandbox example lint clean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(firstword $(MAKEFILE_LIST)) | \
@@ -27,6 +27,9 @@ verify: ## assert the bundled plugins load (needs the image)
 
 check: ## assert committed results still satisfy their invariants (no Docker)
 	bash $(HARNESS)/check-invariants.sh
+
+test: ## unit-test probe.sh behavior in a controlled container (needs the image)
+	bash $(HARNESS)/test-harness.sh
 
 probes: ## regenerate Docker probe results on this host (macOS/Linux)
 	bash $(HARNESS)/run-docker-probes-macos.sh
@@ -43,11 +46,17 @@ sandbox: ## interactive non-root sandbox with the current dir mounted
 example: ## develop a skeleton-research repo inside the sandbox (demo, no model)
 	bash examples/research-repo/run.sh --demo
 
-lint: ## shellcheck (if installed) + bash -n on all scripts
-	@for f in $(HARNESS)/*.sh examples/*/*.sh; do \
-	  if command -v shellcheck >/dev/null 2>&1; then shellcheck -S error -e SC2086 "$$f" || exit 1; \
-	  else bash -n "$$f" || exit 1; fi; \
-	done
+lint: ## shellcheck (local → docker → bash -n fallback) on all scripts
+	@FILES="$$(find $(HARNESS) examples -name '*.sh' | sort)"; \
+	if command -v shellcheck >/dev/null 2>&1; then \
+	  echo "lint: using local shellcheck"; shellcheck -S error -e SC2086 $$FILES || exit 1; \
+	elif docker info >/dev/null 2>&1; then \
+	  echo "lint: local shellcheck absent; using docker image koalaman/shellcheck"; \
+	  docker run --rm -v "$$(pwd):/w" -w /w koalaman/shellcheck -S error -e SC2086 $$FILES || exit 1; \
+	else \
+	  echo "lint: shellcheck unavailable; bash -n only"; \
+	  for f in $$FILES; do bash -n "$$f" || exit 1; done; \
+	fi
 	@echo "lint: OK"
 
 clean: ## remove scratch outputs and the persistent agent-home volume

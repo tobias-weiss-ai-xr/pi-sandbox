@@ -13,7 +13,8 @@ Analysis in [`REPORT.md`](REPORT.md); adversaries in [`THREAT_MODEL.md`](THREAT_
 make help        # list all targets
 make image       # build pi-sandbox:latest
 make verify      # assert the 4 bundled plugins load (9 checks)
-make check       # assert the committed results still satisfy their invariants (no Docker)
+make test        # unit-test probe.sh behavior in a controlled container (19 checks)
+make check       # assert committed results still satisfy their invariants (55 checks; no Docker)
 make sandbox     # interactive non-root sandbox with the current dir mounted
 make example     # develop a skeleton-research repo inside the sandbox (demo, no model)
 ```
@@ -138,10 +139,12 @@ docker run --rm -e SAIA_API_KEY \
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs three jobs:
 
-- **lint** — `shellcheck -S error` + `bash -n` over every harness script;
+- **lint** — `shellcheck -S error` + `bash -n` (uses local shellcheck in CI; falls back to the
+  `koalaman/shellcheck` Docker image, then `bash -n`, locally);
 - **invariants** — `make check` asserts the committed corpus (no Docker);
-- **sandbox** — builds the image → `make verify` → regenerates the Linux probes →
-  re-asserts invariants → uploads the fresh results as an artifact.
+- **sandbox** — builds the image → `make verify` → unit-tests the probe (`make test`) →
+  regenerates the Linux probes → re-asserts invariants → runs the research example
+  (`make example`) → uploads the fresh results as an artifact.
 
 ## Safety of the probe
 

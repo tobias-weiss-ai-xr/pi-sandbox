@@ -8,10 +8,12 @@
 # Exit non-zero if any invariant fails.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-pass=0 fail=0
+pass=0 fail=0 warns=0
 
 ok()  { printf '  \033[32mPASS\033[0m  %s\n' "$1"; pass=$((pass+1)); }
 no()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; fail=$((fail+1)); }
+# warn() — informational marker; does NOT fail the run
+warn(){ printf '  \033[33mWARN\033[0m  %s\n' "$1"; warns=$((warns+1)); }
 # require <file> <ERE> <description>
 require() { if grep -Eq -e "$2" "$1"; then ok "$3"; else no "$3"; fi; }
 # forbid  <file> <ERE> <description>
@@ -67,6 +69,88 @@ for f in results/12-*.txt; do
   require "$f" 'cannot push'                   "$f: no push credentials in the sandbox"
 done
 
+# --- groups added to close the coverage gap (01/05/07/08) -------------------
+echo "## 01 — direct on host (no isolation): host is writable + secrets exposed"
+for f in results/01-*.txt; do
+  require "$f" 'parent-dir write +SUCCESS'        "$f: host writable (parent-dir write succeeds)"
+  require "$f" 'example.com +.*HTTP 200'          "$f: egress reaches the internet"
+  require "$f" 'secret-shaped vars found: +[1-9]' "$f: host exposes real secret vars"
+done
+
+echo "## 05 — gVisor (legion): a step tighter than plain Docker"
+for f in results/05-legion-gvisor.txt; do
+  require "$f" 'uname: .*gvisor'                  "05-open: ran under gVisor (runsc)"
+  require "$f" 'parent-dir write +blocked'        "05-open: denies writes even on writable rootfs (novel)"
+  require "$f" 'example.com .*200'                "05-open: open run keeps egress"
+done
+for f in results/05-legion-gvisor-hardened.txt; do
+  require "$f" 'uname: .*gvisor'                  "05-hdn: ran under gVisor (runsc)"
+  require "$f" 'parent-dir write +blocked'        "05-hdn: writes blocked"
+  require "$f" 'example.com .*ERR'                "05-hdn: no egress"
+done
+
+echo "## 07 — secrets-broker: the real key never enters the box"
+for f in results/07-*broker.txt; do
+  require "$f" 'real key present in env\?: +no'   "$f: placeholder only, real key stays on the host"
+  require "$f" 'secret-shaped vars in env: +[1-9]' "$f: only broker token + placeholder (no raw key)"
+done
+
+echo "## 08 — timing: container-start figure recorded"
+for f in results/08-*.txt; do
+  require "$f" 'container start' "$f: timing recorded"
+done
+
+# --- warnings (informational; never fail the run) --------------------------
+echo "## warnings — stakes lowered to surfaces, not gates"
+# Timing-drift sentinel: if a re-measured container start is implausibly large
+# the recorded figure no longer reflects reality (was ~0.5–3 s).
+for f in results/08-*.txt; do
+  max="$(grep -oE '[0-9]+\.[0-9]+ ?s' "$f" | tr -d ' s' | sort -nr | head -1)"
+  if [ -n "$max" ] && awk -v v="$max" 'BEGIN{ exit !(v>300) }'; then
+    warn "$f: container-start figure ${max}s looks like drift (expected ~0.5–3s)"
+  fi
+done
+
+# Coverage-gap: any result file with no invariants here is a blind spot.
+# Add new files deliberately by writing checks for them (or drop them from
+# results/). This list is the current corpus; keep it in sync.
+expected_files="
+01-direct-no-isolation.txt
+01-legion-direct.txt
+01-macos-direct.txt
+02-docker-recommended.txt
+02-legion-docker-recommended.txt
+02-macos-docker-recommended.txt
+03-docker-leaky-mounts.txt
+03-legion-docker-leaky-mounts.txt
+03-macos-docker-leaky-mounts.txt
+04-docker-hardened.txt
+04-legion-docker-hardened.txt
+04-macos-docker-hardened.txt
+05-gondolin-attempt.txt
+05-legion-gvisor-hardened.txt
+05-legion-gvisor.txt
+06-sandbox-runtime-attempt.txt
+07-docker-sandboxes-sbx.txt
+07-legion-secrets-broker.txt
+08-macos-timing.txt
+08-timing.txt
+09-nonroot-hardened.txt
+10-agentic-smoke-hardened-nonroot.txt
+10-agentic-smoke-hardened-root.txt
+10-agentic-smoke-recommended.txt
+11-exfil-hardened.txt
+11-exfil-recommended.txt
+12-sandbox-research-repo.txt
+"
+for f in results/*.txt; do
+  b="${f##*/}"
+  if ! printf '%s\n' "$expected_files" | grep -Fxq "$b"; then
+    warn "$f: result file has no invariants — add checks for it or document it"
+  fi
+done
+
+
 echo
-printf '== invariants: %d passed, %d failed ==\n' "$pass" "$fail"
+printf '== invariants: %d passed, %d failed, %d warnings ==\n' "$pass" "$fail" "$warns"
 [ "$fail" -eq 0 ]
