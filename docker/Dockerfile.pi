@@ -7,5 +7,20 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 
+# --- Sandbox plugins: SAIA provider + token-efficiency modes -------------------
+# Pre-installed so a freshly-built pi-sandbox ships with all four working.
+# - pi-saia-plugin: auto-registers the SAIA Academic Cloud provider + models;
+#   models appear when SAIA_API_KEY is passed at runtime.
+# - opencode-ponytail: minimal-code rules (/ponytail lite|full|ultra|off).
+# - pi-caveman: terse-prose output, ~75% fewer output tokens (/caveman ...).
+# - @sherif-fanous/pi-rtk: routes shell commands through the rtk binary when
+#   present; degrades to unchanged commands otherwise (/rtk status).
+# NOTE: pi-saia-plugin needs git (already installed above). The npm deprecation
+# warning for opencode-ponytail is harmless.
+RUN pi install git:github.com/tobias-weiss-ai-xr/pi-saia-plugin \
+ && pi install npm:opencode-ponytail \
+ && pi install npm:pi-caveman \
+ && pi install npm:@sherif-fanous/pi-rtk
+
 WORKDIR /workspace
 ENTRYPOINT ["pi"]

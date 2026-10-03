@@ -210,3 +210,70 @@ bash harness/run-docker-probes.sh              # 02 recommended, 03 leaky, 04 ha
 
 The probe is safety-designed: it prints file **existence + size only**, env-var **names
 only** — never secret contents. Raw evidence: `results/01…08-*.txt`.
+
+---
+
+## 6. macOS run (this document's update)
+
+Re-ran the same eval on a **macOS 15.7.9 / x86_64** host, Docker 29.7.2 client
+through **Colima** (Linux VM backend). Raw evidence:
+`results/01..04/-08-macos-*.txt`.
+
+| Rank | Method | Boundary strength | On this Mac today? |
+|---|---|---|---|
+| 1 | Plain Docker (recommended) | Strong (whole process) | ✅ tested, works |
+| 1b | Plain Docker hardened | Strongest tested | ✅ tested, works |
+| 2-6 | sbx / OpenShell / Gondolin / sandbox-runtime | — | ❌ **not installed** on this host |
+
+### Findings (mirror the Windows run)
+
+- **Baseline** (`results/01-macos-direct.txt`): **8** secret-shaped env vars,
+  real Pi `settings.json` (**6,288 B**), real SSH key `~/.ssh/id_ed25519`
+  (macOS uses ed25519, not `id_rsa` — the probe only greps `id_rsa`, so the
+  `id_rsa` line reads `missing` on this host but the mounted `$HOME` in the
+  leaky run exposes the real key), writes succeed outside the workspace, full
+  egress, `docker` CLI on PATH, 733 processes visible.
+- **Recommended** (`02`): host secrets gone (1 dummy var); host `~/.ssh`,
+  `~/.aws` missing; `docker.sock` absent; parent-dir write lands harmlessly
+  inside the container; network egress still **open** (metadata IP blocked).
+- **Leaky** (`03`): real `settings.json` (6,288 B) + host `$HOME` visible —
+  mounts, not Docker, decide exposure (same as documented).
+- **Hardened** (`04`, `--network none --read-only --tmpfs /tmp`): all three
+  network probes **blocked**, parent write **blocked**, `/tmp` still writable
+  (tmpfs). Both plain-Docker gaps close with two flags — verified on Mac.
+- **Timing** (`08-macos-timing.txt`): container start ≈ **2.7 s** (best of 5)
+  vs direct ≈ 0.03 s. Slower than the Windows ~0.53 s because the Docker daemon
+  here runs inside a Colima VM; a single long-lived container amortizes this.
+
+**Bottom line on macOS:** same conclusion as Windows — **Plain Docker is the only
+strong boundary that runs today**, and `--network none --read-only --tmpfs /tmp`
+closes its two gaps, verified here. The other methods (sbx, OpenShell, Gondolin,
+sandbox-runtime) are not installed on this host; Gondolin additionally needs
+QEMU + Node ≥23.6 (both absent).
+
+---
+
+## 7. Sandbox plugins (pi-saia-plugin + ponytail + rtk + caveman)
+
+The `pi-sandbox:latest` image now **bakes in four packages** (see `README.md`,
+`docker/Dockerfile.pi`). Verified in a fresh container (no persistent config),
+`harness/check-sandbox-plugins.sh` — **9/9 PASS**:
+
+1. All four packages registered (`pi list`): pi-saia-plugin, opencode-ponytail,
+   pi-caveman, @sherif-fanous/pi-rtk.
+2. No extension-load errors on startup.
+3. pi-saia-plugin registers the SAIA provider; with `SAIA_API_KEY` set,
+   `pi --list-models` shows **26** `saia/*` rows (models + aliases).
+4. ponytail / caveman / rtk extensions each load cleanly.
+
+End-to-end (real inference, fresh container, one tiny SAIA model):
+
+```text
+$ pi --model saia/meta-llama-3.1-8b-instruct -p "Reply with exactly the two words: sandbox ok"
+"sandbox ok"
+```
+
+runs the full stack — plugin provider registration → pi → SAIA API — inside the
+sandbox. **Caveats:** `rtk` needs the standalone `rtk` Rust binary for real token
+savings (the packaged extension otherwise degrades gracefully and still
+registers `/rtk`); `opencode-ponytail`@4.7.3 is deprecated on npm (loads fine).

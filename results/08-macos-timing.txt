@@ -1,0 +1,12 @@
+Timing: pi-sandbox container start vs direct command (macOS host, Docker via Colima)
+host: mwla0700.WLAN.Uni-Marburg.DE | macOS 15.7.9 | x86_64 | Docker client 29.7.2 / server 29.5.2
+method: elapsed wall time for $n iterations, shown per-iteration below
+
+  container start (ephemeral, best of 5): 2.69 s
+  direct /bin/true        (best of 5): 0.03 s
+
+Notes:
+  - Container start is ~2.7 s on this Mac because the Docker daemon runs in a
+    Colima (Linux) VM; the Windows report measured ~0.53 s on native WSL2.
+  - In real use you start one long-lived container, so this is not per-tool-call
+    overhead.

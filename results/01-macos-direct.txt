@@ -1,0 +1,87 @@
+
+======================================================================
+## PROBE: 01-macos-direct
+======================================================================
+  run host:                    mwla0700.WLAN.Uni-Marburg.DE
+  whoami:                      weissto
+  id:                          uid=501(weissto) gid=20(staff) groups=20(staff),12(everyone),61(localaccounts),79(_appserverusr),80(admin),81(_appserveradm),701(com.apple.sharepoint.group.1),33(_appstore),98(_lpadmin),100(_lpoperator),204(_developer),250(_analyticsusers),395(com.apple.access_ftp),398(com.apple.access_screensharing),399(com.apple.access_ssh),400(com.apple.access_remote_ae)
+  pwd:                         /Users/weissto/pi-sandbox
+  uname:                       Darwin mwla0700.WLAN.Uni-Marburg.DE 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:50:07 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_X86_64 x86_64
+  ostype:                      darwin24
+  workdir:                     /Users/weissto/pi-sandbox
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /Users/weissto/.ssh            EXISTS size=?
+  /Users/weissto/.ssh/id_rsa     missing
+  /Users/weissto/.aws            missing
+  /Users/weissto/.aws/credentials missing
+  /Users/weissto/.gnupg          missing
+  /Users/weissto/.pi/agent       EXISTS size=?
+  /Users/weissto/.pi/agent/settings.json EXISTS size=6288
+  /Users/weissto/.docker         EXISTS size=?
+  /Users/weissto/.kube           missing
+  /Users/weissto/.netrc          missing
+  /Users/weissto/.gitconfig      EXISTS size=29
+  /etc/passwd                    EXISTS size=9196
+  /etc/shadow                    missing
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                missing
+  /root/.ssh                     missing
+  /run/secrets                   missing
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  GROQ_API_KEY is set
+  ZAI_API_KEY is set
+  GOOGLE_API_KEY is set
+  OPENROUTER_API_KEY is set
+  OPENCODE_API_KEY is set
+  LITELLM_API_KEY is set
+  SAIA_API_KEY is set
+  TUD_API_KEY is set
+  secret-shaped vars found:    8
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-14885)
+  parent-dir write               SUCCESS (wrote /Users/weissto/.pi-probe-escape-14885)
+
+======================================================================
+## D. network egress
+======================================================================
+  example.com            https://example.com -> HTTP 200 (curl)
+  anthropic              https://api.anthropic.com -> HTTP 404 (curl)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> HTTP 000 (curl)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                missing
+  docker CLI present on PATH
+
+======================================================================
+## F. process visibility
+======================================================================
+  visible processes: 733
+  sample:     1 ??       205:33.33 /sbin/launchd|   91 ??        53:34.57 /usr/libexec/logd|   92 ??         0:01.25 /usr/libexec/smd|
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  /dev/disk1s5s1 on / (apfs, sealed, local, read-only, journaled)
+  devfs on /dev (devfs, local, nobrowse)
+  /dev/disk1s3 on /System/Volumes/Preboot (apfs, local, journaled, nobrowse)
+  /dev/disk1s7 on /System/Volumes/VM (apfs, local, noexec, journaled, noatime, nobrowse)
+  /dev/disk1s6 on /System/Volumes/Update (apfs, local, journaled, nobrowse)
+  /dev/disk1s1 on /System/Volumes/Data (apfs, local, journaled, nobrowse, root data)
+  /dev/disk1s2 on /Volumes/Ohne Titel (apfs, local, journaled)
+  map auto_home on /System/Volumes/Data/home (autofs, automounted, nobrowse)
+  disk free (workdir):         /dev/disk1s1 466Gi 145Gi 290Gi 34% 1,5M 3,0G 0% /System/Volumes/Data
+======================================================================
+## END PROBE: 01-macos-direct
+======================================================================
