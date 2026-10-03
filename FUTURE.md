@@ -37,7 +37,64 @@ Inspiration scan (2026-10):
 | 7 | **Greywall** vs bwrap side-by-side | kernel/process | medium | medium | container-free deny-by-default; tests whether Docker is even needed on legion |
 | 8 | **Kata/Firecracker via containerd** (Cleanroom/Mitos posture) | microVM | high | high | deny-default egress + brokered secrets; heavier ops | 
 
-## Horizontal improvements (independent of which experiment)
+## The Talos angle — the OS under the K8s-tier experiment (#8)
+
+Talos is not a sandbox — it's the **host OS that makes table-row #8 (Kata/Firecracker via
+containerd) and the k8s-sigs agent-sandbox pattern actually secure**. Framed that way it's a
+real candidate for a *dedicated agent-execution node*, and it happens to match the homelab
+constraints. Grounding (2026-10 scan):
+
+- **[agent-sandbox](https://github.com/kubernetes-sigs/agent-sandbox)** (kubernetes-sigs,
+  ~4.1k⭐) — a `Sandbox` CRD: stateful, single-container, stable-identity pods with
+  persistent storage, built exactly for "AI agent runtimes". It is an *orchestrator* — it
+  delegates low-level isolation to **gVisor / Kata Containers via `RuntimeClass`**. That is
+  the K8s-native equivalent of our report's pi-in-Docker, with the two gaps closed by
+  platform policy instead of per-run flags: default-deny NetworkPolicy (egress) and a secret
+  webhook (brokering, the sbx pattern cluster-wide).
+- **Talos specifics that matter here:** immutable rootfs + no SSH + no package manager +
+  single user + **mTLS API-only** — a node whose only job is running untrusted,
+  model-generated code gets maximal container-escape resistance at the OS layer (no shell,
+  no package manager, nothing to land on after escape); machine config is declarative YAML
+  beside the repo (fits the existing git/ansible workflow); containerd CRI config snippets
+  via `machine.files` → `/etc/cri/conf.d` enable RuntimeClasses; gVisor ships as a Sidero
+  extension (`siderolabs/extensions`, `container-runtime/gvisor-debug` proves the plumbing).
+- **Honest cost:** it's a new platform, not a script. A dedicated node's worth of ops
+  (talosctl instead of SSH; Sidero Omni if the fleet grows), and Kata needs KVM + qemu
+  (Talos extensions, heavier; gVisor is the easy default). **It does not fix the real
+  credential surface** — legion's `~/.pi/agent` + plugin tokens live on the workstation;
+  Talos only helps if the sandbox itself is the thing being secured, i.e. you stop running
+  risky agent commands on legion and run them on the sandbox node instead.
+
+**Where it fits the homelab:** ai1/ai2 are inference-only (never agents). A Talos node is a
+*new* dedicated worker — a host that exists to execute untrusted agent commands for the
+whole opencode fleet (legion, chemie, ci, tobi-yoga, pcrz1334, wsl), with legion clients
+connecting remotely (the fleet already does remote SSH).
+
+**Posture you'd validate in the pilot:**
+
+| Layer | Default |
+|---|---|
+| Isolation | `RuntimeClass` = gVisor (default), Kata (risky/GPU tasks) |
+| Egress | Cilium default-deny + FQDN allowlist (provider APIs, git remotes only) |
+| Secrets | admission webhook: placeholder-substitute real keys (sbx pattern, platform-wide) |
+| Lifecycle | agent-sandbox CRD: stateful singleton pi/opencode sessions, persistent storage |
+| Node audit | Falco; node itself immutable/mTLS (Talos) |
+
+This combination is exactly the **"strong-posture tier"** from the awesome list
+(microVM/gVisor **and** restricted egress **and** brokered secrets) achieved self-hosted —
+compare Katakate k7 (Kata+K3s, lighter variant).
+
+**Recommendation (lazy-first):**
+1. **Now:** the FUTURE.md quick wins — `05-gvisor` probe on legion (Docker `--runtime=runsc`
+   already gives the gVisor layer without K8s, answering "is gVisor measurably better than
+   plain Docker for our probe") + `07-secrets-broker`. ~80% of the security learnings, one day.
+2. **Weekend pilot:** Talos (single node, KVM on legion or the decommissioned Hetzner box)
+   + agent-sandbox + gVisor RuntimeClass + default-deny + placeholder webhook; run the
+   probe suite against it as result `08-*` — the first K8s-tier datapoint in this repo.
+3. **Only when multi-tenant demand appears:** dedicated Talos worker joined to the homelab
+   fleet. Until then, per-host Docker flags remain the right size of solution.
+
+
 
 - **Credential story repo-wide**: real keys stay in a host-side store (sops/vault); containers get
   scoped tokens or a forwarded host proxy port. Fix the §4 plugin-credential hole: plugin tokens
