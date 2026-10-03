@@ -105,6 +105,38 @@ compare Katakate k7 (Kata+K3s, lighter variant).
 - **Image size**: 1.36 GB from node:24-bookworm-slim; consider multi-stage (builder → runtime
   with only pi + git + ripgrep) and a scratch/minimal distroless base.
 
+## Experiment status
+
+### ✅ Done — `05-gvisor` (runs on legion, no dockerd touch)
+
+`runsc` 2026-09-28 installed; OCI bundle built from the pi-sandbox image (`docker create`
++ `docker export` rootfs); ran directly via `runsc --root … --network host|none --platform kvm run`
+(no `daemon.json` edit → **no restart of the 50 production containers** on legion). Configs:
+`scratch/gvisor-config-{open,hardened}.json`.
+
+- **open** (`--network host`, writable rootfs): probe fires identically — `uname 4.19.0-gvisor`,
+  no host files, egress 200. **Novel result: `parent-dir write blocked` even though the rootfs
+  is writable** — gVisor denies writes at `/`, where plain Docker allowed them. gVisor is
+  measurably tighter on the exact gap §3.1 flagged.
+- **hardened** (`--network none`, readonly rootfs): egress ERR, `/tmp` and parent writes
+  blocked — same closed gaps as Docker-hardened, plus the readonly rootfs.
+- Reproduce: `docker create`/`export` → rootfs under `bundle/rootfs`, config next to it,
+  `runsc run`; needs `/dev/kvm` (verified present on legion) or `--platform ptrace`.
+
+### ✅ Done — `07-secrets-broker` (poor-man's Docker Sandboxes)
+
+`harness/broker_server.py` (one demo credential, token-protected) + `harness/probe_broker.sh`
+(prints env NAMES and booleans only; the credential value is equality-checked, never echoed).
+Container got only a placeholder (`FAKE_API_KEY_PLACEHOLDER`) + scoped token; pulled the
+real key at runtime over one forwarded port; match confirmed; value never logged — the sbx
+brokering pattern proven with plain Docker. **Firewall finding:** container→bridge-gateway
+(172.17.0.1) was silently dropped by the host INPUT policy (Docker only programs FORWARD),
+which is exactly why this homelab's `fwd-*` socat containers exist; one temporary
+`iptables -I INPUT -i docker0 -p tcp --dport <p> -j ACCEPT` opened it (rule removed afterwards).
+
+### ⏳ Open — `06-bwrap`, install-and-probe of `sbx`/OpenShell, microVM tier (microsandbox /
+Kata), Greywall
+
 ## Tooling improvements for this repo
 
 1. **Cross-platform runner**: `run-docker-probes.sh` currently hard-requires Git Bash
