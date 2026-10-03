@@ -150,13 +150,14 @@ open-network recommended setup is only safe against *accidental* leaks. See REPO
 
 ## Tooling improvements for this repo
 
-1. **Cross-platform runner**: `run-docker-probes.sh` currently hard-requires Git Bash
-   (`MSYS_NO_PATHCONV`, `pwd -W`). Make it detect MINGW vs native Linux and run unmodified on
-   legion (this session had to hand-invoke equivalent commands).
-2. **CI invariant-check**: GitHub Actions matrix (ubuntu-latest + self-hosted legion runner)
-   runs the full suite and *asserts* the findings — `04-hardened`: no HTTP 200, parent write
-   blocked; `02-recommended`: exactly 1 secret-shaped var, no `id_rsa`; `03-leaky`: leaks
-   present. Converts the probe outputs from documentation to regression tests. The outputs are
-   already grep-able for each invariant.
-3. **Result normalizer**: strip host-specific noise (container IDs, timings) so legion vs
-   windows results diff cleanly.
+1. ~~**Cross-platform runner**~~ **DONE** — `run-docker-probes-macos.sh` now derives the host
+   label from `uname` (`-macos`/`-linux`) and uses `$HOME`-relative mounts, so it runs
+   unmodified on macOS and Linux (Windows still uses the Git-Bash `run-docker-probes.sh`,
+   which needs `MSYS_NO_PATHCONV`/`pwd -W`).
+2. ~~**CI invariant-check**~~ **DONE** — `harness/check-invariants.sh` (also `make check`)
+   asserts every invariant over the corpus with no Docker; `.github/workflows/ci.yml` runs it
+   in a **lint** job, an **invariants** job, and a **sandbox** job that builds the image,
+   regenerates the Linux probes and re-asserts. A self-hosted legion runner is still a
+   nice-to-have (the sandbox job runs on ubuntu-latest today).
+3. ~~**Result normalizer**~~ **DONE** — `harness/normalize-results.sh` collapses host-specific
+   noise; e.g. the Win-vs-macOS `02` diff drops from ~90 lines to 4.

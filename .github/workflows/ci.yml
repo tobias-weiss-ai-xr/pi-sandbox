@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: shellcheck + bash -n
+        run: make lint
+
+  invariants:
+    # No Docker needed: asserts the committed results corpus still holds.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert committed results satisfy their invariants
+        run: make check
+
+  sandbox:
+    # Builds the image, regenerates the Docker probes, asserts both.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: make image
+      - name: Bundled plugins load (9 checks)
+        run: make verify
+      - name: Seed a fake host home (so the leaky 03 probe has secrets to expose)
+        run: |
+          mkdir -p ~/.pi/agent ~/.ssh
+          echo '{}' > ~/.pi/agent/settings.json
+          : > ~/.ssh/id_rsa
+      - name: Regenerate Docker probe results (linux)
+        run: make probes
+      - name: Re-assert invariants (incl. fresh linux results)
+        run: make check
+      - name: Upload fresh probe results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-results-linux
+          path: results/*-linux-*.txt
+          if-no-files-found: ignore
