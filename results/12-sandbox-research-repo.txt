@@ -1,0 +1,39 @@
+==> Building images (if needed)...
+==> Cloning skeleton-research → scratch/quantum-error-correction-research
+==> [demo] bootstrapping 'quantum-error-correction' from the skeleton, inside the sandbox
+sandbox user: pi (uid 1001) | Python 3.11.2 | GNU Make 4.3
+-- topic set:
+topic:
+  name: "Quantum Error Correction"
+  short: "quantum-error-correction"
+  description: "Evidence base for quantum error correction: curated literature, taxonomy, and auto-generated review."
+-- make bootstrap
+  updated CITATION.cff
+
+Next: review the diff, then `make validate && make check && make test`.
+-- make validate
+OK: All 37 papers passed validation
+-- make generate
+python3 scripts/export_bibtex.py
+Exported 37 papers to /workspace/paper/references.bib
+-- make check
+python3 scripts/analysis/generate_reports.py --check
+All reports are up-to-date.
+-- make test
+157 passed in 7.96s
+-- git log:
+8d105c0 Bootstrap quantum-error-correction from skeleton-research
+18b287b Configure corpus for Lie groups: 37 verified papers + full pipeline
+
+==> Proof it persisted — same repo, read on the HOST:
+8d105c0 Bootstrap quantum-error-correction from skeleton-research
+18b287b Configure corpus for Lie groups: 37 verified papers + full pipeline
+ CITATION.cff                       | 4 ++--
+ README.md                          | 6 +++---
+ config/taxonomy.yaml               | 6 +++---
+ docs/index.html                    | 2 +-
+ docs/research/literature_review.md | 2 +-
+ docs/research/trends.md            | 2 +-
+ 6 files changed, 11 insertions(+), 11 deletions(-)
+==> The sandbox committed but cannot push: no SSH key, and the only
+    remote is the fetch-only 'template'.

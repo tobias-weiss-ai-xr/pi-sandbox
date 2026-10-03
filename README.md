@@ -15,6 +15,7 @@ make image       # build pi-sandbox:latest
 make verify      # assert the 4 bundled plugins load (9 checks)
 make check       # assert the committed results still satisfy their invariants (no Docker)
 make sandbox     # interactive non-root sandbox with the current dir mounted
+make example     # develop a skeleton-research repo inside the sandbox (demo, no model)
 ```
 
 Requirements: Docker (`docker build`/`docker run`). On macOS the tested backend is
@@ -54,6 +55,7 @@ Full matrix (incl. adversarial cases) and evidence links: [`THREAT_MODEL.md`](TH
 | `harness/sandbox-plugins.sh` | interactive sandbox shell with the 4 plugins pre-installed |
 | `harness/check-invariants.sh` | grep-based regression assertions over `results/` |
 | `harness/normalize-results.sh` | strips host-specific noise for clean cross-host diffs |
+| `examples/research-repo/` | worked example: develop a git repo (a new `skeleton-research` topic) inside the sandbox |
 | `docker/Dockerfile.pi` | `node:24-bookworm-slim` + pi + git + ripgrep + 4 plugins → `pi-sandbox:latest` |
 | `results/` | raw probe outputs + timing — see [`results/README.md`](results/README.md) |
 | `Makefile` · `THREAT_MODEL.md` · `REPORT.md` | entry points · adversaries · the write-up |
@@ -76,6 +78,23 @@ The Docker variants are:
 | `03` leaky mounts | the above, plus host `~/.ssh`, `~/.pi/agent` and `$HOME` mounted read-only |
 | `04` hardened | `--network none --read-only --tmpfs /tmp` (see the crash caveat above) |
 | `09` non-root hardened | `--user 1001:1001 --cap-drop ALL --security-opt no-new-privileges`, writable tmpfs agent home |
+
+## Example — develop a git repo in the sandbox
+
+The research result has an everyday shape: give the agent a repo, keep your
+credentials out. `examples/research-repo/` bootstraps a new topic from
+[`skeleton-research`](https://github.com/tobias-weiss-ai-xr/skeleton-research)
+inside the sandbox — the agent edits config, runs the project's pipeline and full
+test suite, and commits; the change persists to the host, while push
+stays a human step (no SSH key, fetch-only remote).
+
+```bash
+make example                                     # scripted, no model needed
+bash examples/research-repo/run.sh --interactive # hand it to the real agent
+```
+
+See [`examples/research-repo/README.md`](examples/research-repo/README.md) and
+[`results/12-sandbox-research-repo.txt`](results/12-sandbox-research-repo.txt).
 
 ## Bundled sandbox plugins
 

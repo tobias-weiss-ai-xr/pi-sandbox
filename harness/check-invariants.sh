@@ -59,6 +59,14 @@ echo "## 11 — exfiltration: recommended LEAKS, hardened BLOCKS"
 require results/11-exfil-recommended.txt 'EXFIL_DELIVERED'        "11: recommended leaks the key"
 require results/11-exfil-hardened.txt    'EXFIL_FAILED:ENETUNREACH' "11: hardened blocks egress"
 
+echo "## 12 — sandbox develops a git repo (skeleton-research → new topic)"
+for f in results/12-*.txt; do
+  require "$f" 'sandbox user: pi \(uid 1001\)' "$f: ran non-root in the sandbox"
+  require "$f" '[0-9]+ passed in'              "$f: project test suite passed in-box"
+  require "$f" 'read on the HOST'              "$f: the in-box commit persisted to the host"
+  require "$f" 'cannot push'                   "$f: no push credentials in the sandbox"
+done
+
 echo
 printf '== invariants: %d passed, %d failed ==\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

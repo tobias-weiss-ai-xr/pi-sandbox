@@ -13,7 +13,7 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 HARNESS := harness
 
-.PHONY: help image verify check probes smoke exfil sandbox lint clean
+.PHONY: help image verify check probes smoke exfil sandbox example lint clean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(firstword $(MAKEFILE_LIST)) | \
@@ -40,8 +40,11 @@ exfil: ## measure real-key exfiltration per config (requires the image)
 sandbox: ## interactive non-root sandbox with the current dir mounted
 	bash $(HARNESS)/run.sh
 
+example: ## develop a skeleton-research repo inside the sandbox (demo, no model)
+	bash examples/research-repo/run.sh --demo
+
 lint: ## shellcheck (if installed) + bash -n on all scripts
-	@for f in $(HARNESS)/*.sh; do \
+	@for f in $(HARNESS)/*.sh examples/*/*.sh; do \
 	  if command -v shellcheck >/dev/null 2>&1; then shellcheck -S error -e SC2086 "$$f" || exit 1; \
 	  else bash -n "$$f" || exit 1; fi; \
 	done

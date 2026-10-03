@@ -60,4 +60,9 @@ writes blocked, zero secret vars.
 | `11-exfil-recommended.txt` | `EXFIL_DELIVERED` — the injected key leaks over the open network |
 | `11-exfil-hardened.txt` | `EXFIL_FAILED:ENETUNREACH` — egress blocked |
 
+## 12 — sandbox develops a git repo
+`12-sandbox-research-repo.txt` — inside the sandbox: bootstrap a new topic from
+`skeleton-research`, run the pipeline + 157 tests, and commit; the commit persists
+to the host and the sandbox has no push credentials. See `examples/research-repo/`.
+
 See `THREAT_MODEL.md` for how to read these, and `REPORT.md` (incl. §9) for analysis.
