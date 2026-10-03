@@ -43,6 +43,9 @@ jobs:
     # Trivy surface-advisory scans (report to the GitHub Security tab without
     # blocking the build while the baseline is being accepted). Run `make scan`
     # locally for the strict HIGH/CRITICAL gate.
+    permissions:
+      contents: read
+      security-events: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -61,24 +64,21 @@ jobs:
           ignore-unfixed: true
           exit-code: '0'
       - name: Upload image scan SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: ${{ hashFiles('trivy-results.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
       - name: Trivy config scan (Dockerfile misconfig, advisory)
+        # Table output to the log only (hadolint in `make lint` already gates
+        # the Dockerfile); no SARIF upload for config findings here.
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: config
           scan-ref: docker/Dockerfile.pi
-          format: sarif
-          output: trivy-config.sarif
+          format: table
+          exit-code: '0'
           severity: HIGH,CRITICAL
-      - name: Upload config scan SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-config.sarif
 
 
   invariants:
