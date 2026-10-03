@@ -1,0 +1,77 @@
+/probe.sh: line 82: //.pi-probe-escape-1: Permission denied
+===========
+## PROBE: 05-legion-gvisor
+======================================================================
+  run host:                    gvisor-probe
+  whoami:                      root
+  id:                          uid=0(root) gid=0(root) groups=0(root)
+  pwd:                         /work
+  uname:                       Linux gvisor-probe 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+  ostype:                      linux-gnu
+  workdir:                     /work
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /root/.ssh                     missing
+  /root/.ssh/id_rsa              missing
+  /root/.aws                     missing
+  /root/.aws/credentials         missing
+  /root/.gnupg                   missing
+  /root/.pi/agent                missing
+  /root/.pi/agent/settings.json  missing
+  /root/.docker                  missing
+  /root/.kube                    missing
+  /root/.netrc                   missing
+  /root/.gitconfig               missing
+  /etc/passwd                    EXISTS size=878
+  /etc/shadow                    EXISTS size=500
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=20
+  /root/.ssh                     missing
+  /run/secrets                   missing
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  ANTHROPIC_API_KEY is set
+  secret-shaped vars found:    1
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-1)
+  parent-dir write               blocked
+
+======================================================================
+## D. network egress
+======================================================================
+  example.com            https://example.com -> 200 (node-fetch)
+  anthropic              https://api.anthropic.com -> 404 (node-fetch)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> ERR:undefined (node-fetch)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=20
+  /proc/1/cmdline readable: /bin/bash /probe.sh 
+  docker CLI absent
+
+======================================================================
+## F. process visibility
+======================================================================
+  ps unavailable
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  none on / type overlay (rw)
+  none on /sys type sysfs (rw,dentry_cache_limit=1000)
+  none on /dev type dev (rw,mode=0755)
+  none on /proc type proc (rw,dentry_cache_limit=1000)
+  none on /dev/pts type devpts (rw)
+  disk free (workdir):         none 8.0E 0 8.0E 0% /
+======================================================================
+## END PROBE: 05-legion-gvisor
+======================================================================

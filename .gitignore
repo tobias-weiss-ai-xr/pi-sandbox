@@ -1,5 +1,6 @@
 # build artifacts
-scratch/
+scratch/*
+!scratch/gvisor-config-*.json
 node_modules/
 *.log
 

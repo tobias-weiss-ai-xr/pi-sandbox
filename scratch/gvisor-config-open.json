@@ -1,0 +1,26 @@
+{
+  "ociVersion": "1.2.1",
+  "process": {
+    "terminal": false,
+    "user": { "uid": 0, "gid": 0 },
+    "args": ["/bin/bash", "/probe.sh"],
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "TERM=xterm",
+      "PROBE_NAME=05-legion-gvisor",
+      "PROBE_WORKDIR=/work"
+    ],
+    "cwd": "/work",
+    "capabilities": {
+      "bounding": ["CAP_SYS_ADMIN", "CAP_NET_ADMIN"],
+      "effective": ["CAP_SYS_ADMIN", "CAP_NET_ADMIN"],
+      "inheritable": [],
+      "permitted": ["CAP_SYS_ADMIN", "CAP_NET_ADMIN"],
+      "ambient": []
+    },
+    "rlimits": [ { "type": "RLIMIT_NOFILE", "hard": 1024, "soft": 1024 } ]
+  },
+  "root": { "path": "rootfs", "readonly": false },
+  "hostname": "gvisor-probe",
+  "linux": { "namespaces": [ { "type": "pid" }, { "type": "mount" } ] }
+}
