@@ -1,0 +1,81 @@
+
+======================================================================
+## PROBE: 04-docker-hardened
+======================================================================
+  run host:                    7f7de2978a2b
+  whoami:                      root
+  id:                          uid=0(root) gid=0(root) groups=0(root)
+  pwd:                         /workspace
+  uname:                       Linux 7f7de2978a2b 6.18.40.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Fri Jul 31 22:12:15 UTC 2026 x86_64 GNU/Linux
+  ostype:                      linux-gnu
+  workdir:                     /workspace
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /root/.ssh                     missing
+  /root/.ssh/id_rsa              missing
+  /root/.aws                     missing
+  /root/.aws/credentials         missing
+  /root/.gnupg                   missing
+  /root/.pi/agent                EXISTS size=0
+  /root/.pi/agent/settings.json  missing
+  /root/.docker                  missing
+  /root/.kube                    missing
+  /root/.netrc                   missing
+  /root/.gitconfig               missing
+  /etc/passwd                    EXISTS size=878
+  /etc/shadow                    EXISTS size=500
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=15
+  /root/.ssh                     missing
+  /run/secrets                   missing
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  ANTHROPIC_API_KEY is set
+  secret-shaped vars found:    1
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-1)
+  parent-dir write               blocked
+
+======================================================================
+## D. network egress
+======================================================================
+/probe.sh: line 82: //.pi-probe-escape-1: Read-only file system
+  example.com            https://example.com -> ERR:undefined (node-fetch)
+  anthropic              https://api.anthropic.com -> ERR:undefined (node-fetch)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> ERR:undefined (node-fetch)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=15
+  /proc/1/cmdline readable: bash /probe.sh 
+  docker CLI absent
+
+======================================================================
+## F. process visibility
+======================================================================
+  ps unavailable
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  overlay on / type overlay (ro,relatime,lowerdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13857/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13844/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13843/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13842/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13834/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13833/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13832/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13831/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13830/fs,upperdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13858/fs,workdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/13858/work)
+  proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+  tmpfs on /dev type tmpfs (rw,nosuid,size=65536k,mode=755)
+  devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666)
+  sysfs on /sys type sysfs (ro,nosuid,nodev,noexec,relatime)
+  cgroup on /sys/fs/cgroup type cgroup2 (ro,nosuid,nodev,noexec,relatime,nsdelegate)
+  mqueue on /dev/mqueue type mqueue (rw,nosuid,nodev,noexec,relatime)
+  shm on /dev/shm type tmpfs (rw,nosuid,nodev,noexec,relatime,size=65536k)
+  disk free (workdir):         C:\ 3.7T 2.7T 1.1T 72% /workspace
+======================================================================
+## END PROBE: 04-docker-hardened
+======================================================================

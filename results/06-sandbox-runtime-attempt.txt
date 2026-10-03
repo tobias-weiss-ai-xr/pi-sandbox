@@ -1,0 +1,32 @@
+# OS-level sandbox extension (@anthropic-ai/sandbox-runtime) — practical attempt
+# Host: Windows 11, Node v22.14.0
+# Package: @anthropic-ai/sandbox-runtime@0.0.78 (installed via npm, loads on win32)
+
+KEY FINDING — CONTRADICTS PI DOCS:
+  pi docs (containerization.md / sandbox extension README) say OS-level sandboxing
+  supports macOS (sandbox-exec) and Linux (bubblewrap) only. The extension code
+  disables on non-darwin/linux. BUT @anthropic-ai/sandbox-runtime@0.0.78 ships a
+  FULL WINDOWS BACKEND:
+    - srt-win.exe (vendored Windows sandbox runtime binary)
+    - Windows Filtering Platform (WFP) for network egress control
+    - Windows ACLs for filesystem restrictions
+    - A dedicated `srt-sandbox` user keyed by SID for WFP filtering
+    - Functions: installWindowsSandbox, checkWindowsSandboxStatusAsync,
+      getWindowsWfpStatusAsync, grantWindowsAcl/revokeWindowsAcl,
+      WindowsSandboxError, SrtWinConfigSchema, WindowsConfigSchema
+
+Attempt: SandboxManager.initialize({ network, filesystem })
+Result: FAIL — "no srt-win path configured; set windows.srtWin.path ..."
+
+Root cause: the vendored srt-win.exe is NOT shipped in the npm package
+  (node_modules/@anthropic-ai/sandbox-runtime/vendor/ is absent).
+  getDefaultWritePaths/getSrtWinPath point to a default location that doesn't exist.
+
+Required to activate (from windowsInstallInstructions()):
+  "Windows sandbox needs a one-time install (one UAC prompt):
+   npx sandbox-runtime windows-install
+   — or call installWindowsSandbox(), or run `srt-win.exe install` directly.
+   No logout is needed: the WFP filter keys on the dedicated srt-sandbox user's SID."
+
+NOT RUN HERE: the install requires UAC elevation and creates a system user + WFP
+  network filter — an invasive system change not performed unattended.

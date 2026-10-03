@@ -1,0 +1,15 @@
+# Gondolin micro-VM — practical attempt on this host
+# Host: Windows 11, Git Bash (MINGW64), Node v22.14.0, no QEMU
+# Package: @earendil-works/gondolin@0.12.0 (installed via npm, loads on Node 22)
+
+Attempt: VM.create({ vfs: { mounts: { "/workspace": new RealFSProvider(cwd) } } })
+
+Result: FAIL at runtime
+  - Guest image DID extract to C:\Users\Tobias\.cache\gondolin\v0.5.0
+  - Then: spawnSync qemu-img ENOENT  (QEMU not installed)
+  - Docs require Node >= 23.6.0 and QEMU; package loaded on Node 22 but QEMU is the hard blocker here.
+
+To make it runnable on this host:
+  1. Install QEMU (e.g. via choco: `choco install qemu`; or scoop/MSYS2)
+  2. Upgrade Node to >= 23.6 (no nvm-windows present; would need nvm-windows or fnm)
+  3. Re-run: pi -e ~/.pi/agent/extensions/gondolin

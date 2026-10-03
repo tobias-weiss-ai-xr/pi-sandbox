@@ -1,0 +1,82 @@
+
+======================================================================
+## PROBE: 01-direct-no-isolation
+======================================================================
+  run host:                    TobiasLegion2
+  whoami:                      Tobias
+  id:                          uid=197610(Tobias) gid=197121 groups=197121
+  pwd:                         /c/Users/Tobias/git/pi-sandboxing
+  uname:                       MINGW64_NT-10.0-26200 TobiasLegion2 3.5.4-cbe555e0.x86_64 2024-10-10 20:32 UTC x86_64 Msys
+  ostype:                      msys
+  workdir:                     /c/Users/Tobias/git/pi-sandboxing
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /c/Users/Tobias/.ssh           EXISTS size=0
+  /c/Users/Tobias/.ssh/id_rsa    EXISTS size=1675
+  /c/Users/Tobias/.aws           EXISTS size=0
+  /c/Users/Tobias/.aws/credentials missing
+  /c/Users/Tobias/.gnupg         missing
+  /c/Users/Tobias/.pi/agent      EXISTS size=0
+  /c/Users/Tobias/.pi/agent/settings.json EXISTS size=4795
+  /c/Users/Tobias/.docker        EXISTS size=0
+  /c/Users/Tobias/.kube          EXISTS size=0
+  /c/Users/Tobias/.netrc         missing
+  /c/Users/Tobias/.gitconfig     EXISTS size=2514
+  /etc/passwd                    missing
+  /etc/shadow                    missing
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                missing
+  /root/.ssh                     missing
+  /run/secrets                   missing
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  ZHIPUAI_API_KEY is set
+  LITELLM_API_KEY is set
+  SAIA_API_KEY is set
+  GOOGLE_API_KEY is set
+  NEO4J_PASSWORD is set
+  OPENROUTER_API_KEY is set
+  secret-shaped vars found:    6
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-3277)
+  parent-dir write               SUCCESS (wrote /c/Users/Tobias/git/.pi-probe-escape-3277)
+
+======================================================================
+## D. network egress
+======================================================================
+  example.com            https://example.com -> HTTP 200 (curl)
+  anthropic              https://api.anthropic.com -> HTTP 404 (curl)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> HTTP 000 (curl)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                missing
+  docker CLI present on PATH
+
+======================================================================
+## F. process visibility
+======================================================================
+  visible processes: 6
+  sample:      3333    3331    3273       9180  ?         197610 07:25:30 /usr/bin/bash|     3332    3331    3273      33632  ?         197610 07:25:30 /usr/bin/ps|     1229       1    1227      19136  ?         197610 00:06:35 /c/Users/Tobias/.bun/bin/bun|
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  C:/Program Files/Git on / type ntfs (binary,noacl,auto)
+  C:/Program Files/Git/usr/bin on /bin type ntfs (binary,noacl,auto)
+  C:/Users/Tobias/AppData/Local/Temp on /tmp type ntfs (binary,noacl,posix=0,usertemp)
+  C: on /c type ntfs (binary,noacl,posix=0,user,noumount,auto)
+  D: on /d type ntfs (binary,noacl,posix=0,user,noumount,auto)
+  disk free (workdir):         C: 3.7T 2.7T 1.1T 72% /c
+======================================================================
+## END PROBE: 01-direct-no-isolation
+======================================================================

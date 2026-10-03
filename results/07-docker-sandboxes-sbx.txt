@@ -1,0 +1,21 @@
+# Docker Sandboxes (sbx) — practical status on this host
+# Host: Docker Desktop 29.6.1 (Windows), Linux containers
+
+Findings:
+  - `sbx` CLI: NOT on PATH
+  - `docker sbx` / `docker sandbox`: "docker sandbox is deprecated and has been removed.
+     Please migrate to Docker Sandboxes: https://www.docker.com/products/docker-sandboxes"
+  - No sbx binary in C:\Program Files\Docker\Docker\resources\bin\
+  - npm @docker/sbx: 404 Not Found
+  - Docker plugin ls: empty
+
+Status: NOT installed. Docker Sandboxes is a separate Docker product/CLI (`sbx`)
+  that must be installed independently of Docker Desktop. Its value is a managed
+  sandbox with a credential proxy that keeps the real provider key on the host and
+  substitutes a placeholder inside the sandbox.
+
+To activate: install the `sbx` CLI from Docker, then:
+  sbx secret set anthropic   (for an API key)  OR
+  sbx secret set-custom --host api.anthropic.com --env ANTHROPIC_OAUTH_TOKEN \
+     --placeholder 'sk-ant-oat01-{rand}'   (for a Claude Pro/Max OAuth token)
+  sbx run --kit "docker.io/sbx/pi-kit:latest" pi

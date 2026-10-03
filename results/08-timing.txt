@@ -1,0 +1,25 @@
+# Per-command startup overhead (image pre-built, warm)
+
+Measured with bash `time` builtin; `docker run --rm --entrypoint echo pi-sandbox ok`
+spawns a fresh container per invocation. In real pi-in-Docker usage you start
+ONE long-lived `docker run -it pi` and pi runs inside it, so this ~0.5s is a
+one-time container-start cost, NOT a per-tool-call cost.
+
+## Docker container start (entrypoint = echo, 5 runs)
+  run 1: 0.525s
+  run 2: 0.558s
+  run 3: 0.528s
+  run 4: 0.549s
+  run 5: 0.553s
+  median ~0.53s
+
+## Direct bash echo baseline (3 runs)
+  run 1: 0.039s
+  run 2: 0.029s
+  run 3: 0.028s
+  median ~0.03s
+
+## Image cost
+  pi-sandbox image: 1.36 GB (node:24-bookworm-slim + pi + git + ripgrep)
+  pi version inside container: 1.0.0  (host pi: 0.99.2 — version drift, pin the image)
+  Node inside container: v24.21.0

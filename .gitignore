@@ -1,0 +1,6 @@
+# build artifacts
+scratch/
+node_modules/
+*.log
+
+# keep results/ and harness/ (they are the reproducible evidence)
