@@ -1,0 +1,17 @@
+node:fs:1410
+  const result = binding.mkdir(
+                         ^
+
+Error: ENOENT: no such file or directory, mkdir '/root/.pi/agent/sessions/--workspace--'
+    at mkdirSync (node:fs:1410:26)
+    at getDefaultSessionDir (file:///usr/local/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/chunks/chunk-33XOIQ5N.js:530:4323)
+    at _SessionManager.create (file:///usr/local/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/chunks/chunk-33XOIQ5N.js:538:8778)
+    at createSessionManager (file:///usr/local/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/chunks/chunk-33XOIQ5N.js:1204:5401)
+    at main (file:///usr/local/lib/node_modules/@earendil-works/pi-coding-agent/dist/bundle/chunks/chunk-33XOIQ5N.js:1204:10539) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'mkdir',
+  path: '/root/.pi/agent/sessions/--workspace--'
+}
+
+Node.js v24.21.0

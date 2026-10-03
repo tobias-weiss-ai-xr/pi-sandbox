@@ -1,0 +1,91 @@
+
+======================================================================
+## PROBE: 09-nonroot-hardened
+======================================================================
+  run host:                    d1ede9109146
+  whoami:                      pi
+  id:                          uid=1001(pi) gid=1001(pi) groups=1001(pi)
+  pwd:                         /workspace
+  uname:                       Linux d1ede9109146 6.8.0-117-generic #117-Ubuntu SMP PREEMPT_DYNAMIC Tue May  5 19:26:24 UTC 2026 x86_64 GNU/Linux
+  ostype:                      linux-gnu
+  workdir:                     /workspace
+
+======================================================================
+## A. sensitive files (existence + size only)
+======================================================================
+  /home/pi/.ssh                  missing
+  /home/pi/.ssh/id_rsa           missing
+  /home/pi/.ssh/id_ed25519       missing
+  /home/pi/.ssh/id_ecdsa         missing
+  /home/pi/.ssh/config           missing
+  /home/pi/.aws                  missing
+  /home/pi/.aws/credentials      missing
+  /home/pi/.gnupg                missing
+  /home/pi/.pi/agent             EXISTS size=0
+  /home/pi/.pi/agent/settings.json EXISTS size=162
+  /home/pi/.docker               missing
+  /home/pi/.kube                 missing
+  /home/pi/.netrc                missing
+  /home/pi/.gitconfig            missing
+  /etc/passwd                    EXISTS size=913
+/probe.sh: line 38: /etc/shadow: Permission denied
+  /etc/shadow                    EXISTS size=?
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=15
+  /root/.ssh                     missing
+  /run/secrets                   missing
+
+======================================================================
+## A2. privileges (identity + caps)
+======================================================================
+  uid/gid:                     1001/1001
+  runs as root?:               no (non-root, uid 1001)
+  effective caps (CapEff):     0000000000000000 (none)
+
+======================================================================
+## B. secret-shaped env vars (names only)
+======================================================================
+  secret-shaped vars found:    0
+
+======================================================================
+## C. write outside workspace
+======================================================================
+  /tmp write                     SUCCESS (wrote /tmp/pi-probe-write-1)
+/probe.sh: line 106: //.pi-probe-escape-1: Read-only file system
+  parent-dir write               blocked
+
+======================================================================
+## D. network egress
+======================================================================
+  example.com            https://example.com -> ERR:undefined (node-fetch)
+  anthropic              https://api.anthropic.com -> ERR:undefined (node-fetch)
+  metadata AWS           http://169.254.169.254/latest/meta-data/ -> ERR:undefined (node-fetch)
+
+======================================================================
+## E. host resource access
+======================================================================
+  /var/run/docker.sock           missing
+  /proc/1/cmdline                EXISTS size=15
+  /proc/1/cmdline readable: bash /probe.sh 
+  docker CLI absent
+
+======================================================================
+## F. process visibility
+======================================================================
+  ps unavailable
+
+======================================================================
+## G. mount / filesystem view
+======================================================================
+  overlay on / type overlay (ro,relatime,lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1095/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1080/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1079/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1034/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/990/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/989/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/981/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/980/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/979/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/978/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/977/fs,upperdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1096/fs,workdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1096/work,nouserxattr)
+  proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+  tmpfs on /dev type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
+  devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666)
+  sysfs on /sys type sysfs (ro,nosuid,nodev,noexec,relatime)
+  cgroup on /sys/fs/cgroup type cgroup2 (ro,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot)
+  mqueue on /dev/mqueue type mqueue (rw,nosuid,nodev,noexec,relatime)
+  shm on /dev/shm type tmpfs (rw,nosuid,nodev,noexec,relatime,size=65536k,inode64)
+  disk free (workdir):         overlay 98G 25G 69G 27% /
+======================================================================
+## END PROBE: 09-nonroot-hardened
+======================================================================

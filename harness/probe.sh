@@ -41,9 +41,12 @@ check_path() {
 		printf '  %-30s missing\n' "$p"
 	fi
 }
-# Home-relative sensitive locations
-for p in "$HOME/.ssh" "$HOME/.ssh/id_rsa" "$HOME/.aws" "$HOME/.aws/credentials" \
-         "$HOME/.gnupg" "$HOME/.pi/agent" "$HOME/.pi/agent/settings.json" \
+# Home-relative sensitive locations (ed25519/ecdsa too: macOS often uses
+# id_ed25519, which the older id_rsa-only list missed)
+for p in "$HOME/.ssh" "$HOME/.ssh/id_rsa" "$HOME/.ssh/id_ed25519" \
+         "$HOME/.ssh/id_ecdsa" "$HOME/.ssh/config" "$HOME/.aws" \
+         "$HOME/.aws/credentials" "$HOME/.gnupg" \
+         "$HOME/.pi/agent" "$HOME/.pi/agent/settings.json" \
          "$HOME/.docker" "$HOME/.kube" "$HOME/.netrc" "$HOME/.gitconfig"; do
 	check_path "$p"
 done
@@ -52,6 +55,27 @@ for p in "/etc/passwd" "/etc/shadow" "/var/run/docker.sock" "/proc/1/cmdline" \
          "/root/.ssh" "/run/secrets"; do
 	check_path "$p"
 done
+
+# --- A2. Privileges (uid / root? / effective caps) ---------------------------
+section "A2. privileges (identity + caps)"
+uid=$(id -u 2>/dev/null || echo '?')
+gid=$(id -g 2>/dev/null || echo '?')
+kv "uid/gid" "${uid:-?}/${gid:-?}"
+if [ "$uid" = 0 ]; then
+	kv "runs as root?" "yes"
+else
+	kv "runs as root?" "no (non-root, uid $uid)"
+fi
+cap=$(grep '^CapEff:' /proc/self/status 2>/dev/null | awk '{print $2}') || cap=''
+if [ -n "$cap" ]; then
+	if [ "$cap" = 0 ] || [ -z "${cap##0*}" ]; then
+		kv "effective caps (CapEff)" "$cap (none)"
+	else
+		kv "effective caps (CapEff)" "$cap"; [ -n "$cap" ]
+	fi
+else
+	kv "effective caps (CapEff)" "n/a"
+fi
 
 # --- B. Secret-looking env vars (NAMES ONLY, never values) ------------------
 section "B. secret-shaped env vars (names only)"

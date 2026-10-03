@@ -351,3 +351,46 @@ runs the full stack — plugin provider registration → pi → SAIA API — ins
 sandbox. **Caveats:** `rtk` needs the standalone `rtk` Rust binary for real token
 savings (the packaged extension otherwise degrades gracefully and still
 registers `/rtk`); `opencode-ponytail`@4.7.3 is deprecated on npm (loads fine).
+
+---
+
+## 9. Empirical verification — the product, not the probe
+
+The sections above measure `probe.sh`, a shell checklist. Two follow-up tests ran
+**pi itself** as an agent (the product), plus a real exfiltration attempt.
+
+### 9.1 Agentic smoke test — does pi actually *work* end-to-end? (`harness/smoke-agentic.sh`)
+
+Drives pi (`saia/meta-llama-3.1-8b-instruct`) on a tool-using task under three
+configs; asserts pi writes an artifact. Evidence: `results/10-agentic-smoke-*.txt`.
+
+| Config | Result | Meaning |
+|---|---|---|
+| recommended (root, net open) | **agent ran tools, wrote artifact** | product functions end-to-end under recommended |
+| hardened-root (`04` flags) | **pi CRASHES on startup** | `ENOENT mkdir /root/.pi/agent/sessions` — read-only root makes the session dir unwritable; **the "strongest working" boundary does not run the product** |
+| hardened-nonroot (uid 1001, tmpfs home) | booted; **Connection error** (no egress) | non-root detection works, but `--network none` cannot reach a remote model — network-none only supports on-net/local models |
+
+**Correction to §3.1:** "hardened = strongest boundary that actually works" is true
+for the *probe*, **false for pi**. To make hardened usable the agent home must be a
+writable tmpfs/volume (the probe never caught this because it only writes `/tmp`).
+The non-root config boots cleanly with a seeded writable home
+(`results/09-nonroot-hardened.txt`), but remote-inference work needs egress.
+
+### 9.2 Malicious-agent exfiltration probe (`harness/exfil-probe.sh`)
+
+The gap §3.1 flags *qualitatively* ("a compromised container can exfiltrate
+anything you passed") is now **measured**: a process inside the sandbox holding one
+real credential (`CRYPTO_KEY`) tries to POST it to a synthetic attacker collector.
+Evidence: `results/11-exfil-*.txt`.
+
+| Config | Result |
+|---|---|
+| recommended (net open) | **LEAK-CONFIRMED** — the key reached the attacker collector |
+| hardened (`--network none`) | **BLOCKED** (`ENETUNREACH`) — key never delivered |
+
+**Takeaway:** the network-open "recommended" setup is safe only against *accidental*
+leaks; a *deliberately* malicious agent (or a malicious third-party extension, which
+runs inside the boundary with the same grants) can exfiltrate the one real key you
+pass. `--network none` closes this — at the cost of remote-model inference
+(§9.1). The secrets-broker pattern (§/results/07) is the sane middle path for
+workflows that need egress, pending a per-scope token instead of a single shared one.

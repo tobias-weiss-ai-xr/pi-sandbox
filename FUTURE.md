@@ -137,6 +137,17 @@ which is exactly why this homelab's `fwd-*` socat containers exist; one temporar
 ### ⏳ Open — `06-bwrap`, install-and-probe of `sbx`/OpenShell, microVM tier (microsandbox /
 Kata), Greywall
 
+### ✅ Added (this session) — product-function + exfiltration tests
+
+`harness/smoke-agentic.sh` runs **pi as an agent** (not just the probe shell) per config and
+asserts its artifact (`results/10-agentic-smoke-*.txt`). `harness/exfil-probe.sh` measures
+real-key exfiltration over egress against a synthetic collector (`results/11-exfil-*.txt`).
+Two headline results: `hardened-root` (`--read-only` + baked home) **crashes pi on startup**
+(session dir unwritable), so "hardened = strongest working" is false for the product
+until the agent home is a writable tmpfs/volume; and `recommended` (net open + one real key)
+**leaks** the key to an attacker collector, while `--network none` blocks it — so the
+open-network recommended setup is only safe against *accidental* leaks. See REPORT §9.
+
 ## Tooling improvements for this repo
 
 1. **Cross-platform runner**: `run-docker-probes.sh` currently hard-requires Git Bash

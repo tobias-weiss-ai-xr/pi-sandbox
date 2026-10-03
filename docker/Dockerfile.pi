@@ -22,5 +22,19 @@ RUN pi install git:github.com/tobias-weiss-ai-xr/pi-saia-plugin \
  && pi install npm:pi-caveman \
  && pi install npm:@sherif-fanous/pi-rtk
 
+# --- Non-root `pi` user with a baked, writable agent home ---------------------
+# The default entrypoint runs as root (keeps the eval probes / historical
+# results stable), but a hardened production launch is `--user pi` with
+# [network dropped + read-only root + tmpfs + caps dropped] — see
+# harness/run-hardened.sh / `make sandbox`. `pi` is a dedicated UID 1000
+# user whose .pi/agent already ships the four plugins. UID 1001 (1000 = `node`).
+RUN useradd --create-home --uid 1001 --shell /bin/bash pi \
+ && mkdir -p /home/pi/.pi/agent \
+ && cp -a /root/.pi/agent/. /home/pi/.pi/agent/ \
+ && chown -R pi:pi /home/pi/.pi/agent \
+ && cp -a /home/pi/.pi/agent /opt/pi-agent-that-template \
+ && mv /opt/pi-agent-that-template /opt/pi-agent \
+ && chown -R pi:pi /opt/pi-agent
+
 WORKDIR /workspace
 ENTRYPOINT ["pi"]
