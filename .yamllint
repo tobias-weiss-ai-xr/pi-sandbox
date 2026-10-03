@@ -1,0 +1,17 @@
+---
+# yamllint config — GitHub Actions workflow files use idioms that default
+# yamllint flags (spaces in brackets, missing `---`, truthy `on:`/`push:`).
+# Disable exactly those; keep syntax, indentation and spacing checks on.
+rules:
+  document-start: disable
+  truthy: disable
+  brackets: disable
+  line-length: disable
+  new-line-at-end-of-file: enable
+  comments: enable
+  comments-indentation: enable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  trailing-spaces: enable
+  key-duplicates: enable

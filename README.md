@@ -14,9 +14,12 @@ make help        # list all targets
 make image       # build pi-sandbox:latest
 make verify      # assert the 4 bundled plugins load (9 checks)
 make test        # unit-test probe.sh behavior in a controlled container (19 checks)
-make check       # assert committed results still satisfy their invariants (55 checks; no Docker)
+make check       # assert committed results still satisfy their invariants (63 checks; no Docker)
 make sandbox     # interactive non-root sandbox with the current dir mounted
 make example     # develop a skeleton-research repo inside the sandbox (demo, no model)
+make probe-seccomp  # isolate a seccomp profile + tmpfs noexec (results/13-*)
+make lint-meta   # actionlint + yamllint + markdownlint via docker
+make scan        # trivy image scan (strict HIGH/CRITICAL gate)
 ```
 
 Requirements: Docker (`docker build`/`docker run`). On macOS the tested backend is
@@ -36,6 +39,7 @@ Requirements: Docker (`docker build`/`docker run`). On macOS the tested backend 
 | `02` Docker recommended | ✅ hidden | open | ✅ | ❌ **leaks** |
 | `03` Docker leaky mounts | ❌ exposed | open | ✅ | (mounts decide exposure) |
 | `04` Docker hardened | ✅ hidden | ❌ none | ❌ **crashes** | ✅ blocked |
+| `13` seccomp+noexec (net open) | — | ❌ cut by filter | ✅ | (syscalls decide) |
 | `09` non-root hardened | ✅ hidden | ❌ none | ⚠️ local model only | ✅ blocked |
 | `05` gVisor | ✅ hidden | ❌ none | — | ✅ blocked |
 | `07` secrets-broker | ✅ placeholder only | open | ✅ | real key never enters |
@@ -137,14 +141,22 @@ docker run --rm -e SAIA_API_KEY \
 
 ## CI
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs three jobs:
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs five jobs:
 
-- **lint** — `shellcheck -S error` + `bash -n` (uses local shellcheck in CI; falls back to the
-  `koalaman/shellcheck` Docker image, then `bash -n`, locally);
+- **lint** — `shellcheck -S error` + `bash -n` + `hadolint` (falls back to the
+  `koalaman/shellcheck` / `hadolint` Docker images locally);
+- **meta-lint** — `actionlint` + `yamllint` gate; `markdownlint` + external
+  `lychee` dead-link checks are advisory (blocking internal links only);
+- **supply-chain** — `trivy` image + Dockerfile misconfig scans, reported to the
+  GitHub Security tab via SARIF (advisory while a baseline is accepted; run
+  `make scan` locally for the strict HIGH/CRITICAL gate);
 - **invariants** — `make check` asserts the committed corpus (no Docker);
 - **sandbox** — builds the image → `make verify` → unit-tests the probe (`make test`) →
   regenerates the Linux probes → re-asserts invariants → runs the research example
   (`make example`) → uploads the fresh results as an artifact.
+
+`pi-coding-agent` is pinned to `@1.0.1` in `docker/Dockerfile.pi`; the GitHub Actions
+are auto-updated weekly by `dependabot`.
 
 ## Safety of the probe
 

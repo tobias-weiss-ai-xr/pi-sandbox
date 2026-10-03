@@ -53,10 +53,10 @@ run_probe 03-$OS-docker-leaky-mounts \
   -v "$HOME/.pi/agent:/root/.pi/agent:ro" \
   -v "$HOME/.ssh:/root/.ssh:ro"
 
-# 04: hardened — no network, read-only root, tmpfs /tmp.
+# 04: hardened — no network, read-only root, tmpfs /tmp (noexec,nosuid explicit).
 run_probe 04-$OS-docker-hardened \
   -e ANTHROPIC_API_KEY=dummy \
-  --network none --read-only --tmpfs /tmp \
+  --network none --read-only --tmpfs "/tmp:noexec,nosuid,size=256m" \
   -v "$W:/workspace" \
   -v pi-agent-home:/root/.pi/agent
 

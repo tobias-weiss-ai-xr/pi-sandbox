@@ -1,0 +1,30 @@
+
+======================================================================
+## PROBE: seccomp control (unconfined, /tmp executable)
+======================================================================
+  whoami:                      root
+  id:                          uid=0(root) gid=0(root) groups=0(root)
+  uname:                       Linux 6.8.0-117-generic
+  Seccomp mode (0=none, 2=filter): 0
+  effective caps (CapEff):     00000000a80425fb
+
+======================================================================
+## C. writes + exec in /tmp
+======================================================================
+  /tmp write               SUCCESS
+  exec from /tmp           ok (ran-from-tmp)
+
+======================================================================
+## D. network egress (node fetch; network is OPEN in both runs)
+======================================================================
+  example.com            https://example.com -> HTTP 200
+  anthropic              https://api.anthropic.com -> HTTP 404
+
+======================================================================
+## F. does the toolchain still run under the profile?
+======================================================================
+  node:                        v24.21.0 ok
+  pi version:                  1.0.1
+======================================================================
+## END PROBE: seccomp control (unconfined, /tmp executable)
+======================================================================

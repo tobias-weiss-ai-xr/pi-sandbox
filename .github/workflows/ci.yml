@@ -16,6 +16,71 @@ jobs:
       - name: shellcheck + bash -n
         run: make lint
 
+  meta-lint:
+    # Structural lint of the repo's own automation + docs.
+    # actionlint + yamllint gate; markdownlint + external links advisory
+    # (consistent with the repo's "warnings are surfaces, not gates" policy).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint (workflows)
+        run: docker run --rm -v "$PWD:/w" -w /w rhysd/actionlint:latest -color
+      - name: yamllint (.github)
+        run: docker run --rm -v "$PWD:/w" -w /w cytopia/yamllint:latest -c .yamllint -f parsable .github
+      - name: markdownlint (advisory)
+        continue-on-error: true
+        run: docker run --rm -v "$PWD:/w" -w /w davidanson/markdownlint-cli2:v0.17.2
+      - name: lychee - internal links (blocking; never flaky)
+        run: |
+          docker run --rm -v "$PWD:/tmp/repo" lycheeverse/lychee:latest             --offline --no-progress '/tmp/repo/**/*.md'
+      - name: lychee - external links (advisory)
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          docker run --rm -v "$PWD:/tmp/repo" lycheeverse/lychee:latest             --no-progress --max-retries 2 --timeout 15             --accept '200..=299,403,429,500..=599' '/tmp/repo/**/*.md'
+
+  supply-chain:
+    # Trivy surface-advisory scans (report to the GitHub Security tab without
+    # blocking the build while the baseline is being accepted). Run `make scan`
+    # locally for the strict HIGH/CRITICAL gate.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: make image
+      - name: Trivy image scan (advisory)
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: pi-sandbox:latest
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+      - name: Upload image scan SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+      - name: Trivy config scan (Dockerfile misconfig, advisory)
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: docker/Dockerfile.pi
+          format: sarif
+          output: trivy-config.sarif
+          severity: HIGH,CRITICAL
+      - name: Upload config scan SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-config.sarif
+
+
   invariants:
     # No Docker needed: asserts the committed results corpus still holds.
     runs-on: ubuntu-latest

@@ -65,4 +65,14 @@ writes blocked, zero secret vars.
 `skeleton-research`, run the pipeline + 157 tests, and commit; the commit persists
 to the host and the sandbox has no push credentials. See `examples/research-repo/`.
 
+## 13 — seccomp profile + tmpfs noexec (isolating each control)
+`13-macos-seccomp-unconfined.txt` vs `13-macos-seccomp-strict.txt` — the *same*
+probe run twice with **identical caps and an open network**; the only difference is
+a seccomp filter plus a `noexec` `/tmp`. Control: `Seccomp 0`, `/tmp` executable,
+egress `HTTP 200`. Strict: `Seccomp 2`, `/tmp` exec denied, egress cut by the
+filter (`ERR EAI_AGAIN` — the `socket` syscall returns `EPERM` so DNS fails) even
+though the network is open — while `node` and `pi` still run. Read: egress can be
+cut by a syscall filter, not only by `--network none`; and `noexec` tmpfs kills
+`/tmp`-file execution (persistence) without a toaster.
+
 See `THREAT_MODEL.md` for how to read these, and `REPORT.md` (incl. §9) for analysis.

@@ -101,6 +101,20 @@ for f in results/08-*.txt; do
 done
 
 # --- warnings (informational; never fail the run) --------------------------
+echo "## 13 — seccomp profile + tmpfs noexec (control vs strict, same caps+network)"
+for f in results/13-*-seccomp-unconfined.txt; do
+  require "$f" 'Seccomp mode .*: +0'          "13-control: no seccomp filter (Seccomp 0)"
+  require "$f" '/tmp +ok \(ran-from-tmp\)'   "13-control: /tmp is executable"
+  require "$f" 'example.com .*-> HTTP 200'    "13-control: egress open"
+done
+for f in results/13-*-seccomp-strict.txt; do
+  require "$f" 'Seccomp mode .*: +2'          "13-strict: seccomp filter active (Seccomp 2)"
+  require "$f" '/tmp +blocked'                "13-strict: tmpfs noexec blocks /tmp execution"
+  require "$f" 'example.com .*->.*(ERR)'      "13-strict: egress cut by seccomp despite open network"
+  require "$f" 'node:.*ok'                    "13-strict: node still runs under the profile"
+  require "$f" 'pi version: +[0-9.]'         "13-strict: pi still runs under the profile"
+done
+
 echo "## warnings — stakes lowered to surfaces, not gates"
 # Timing-drift sentinel: if a re-measured container start is implausibly large
 # the recorded figure no longer reflects reality (was ~0.5–3 s).
@@ -142,6 +156,8 @@ expected_files="
 11-exfil-hardened.txt
 11-exfil-recommended.txt
 12-sandbox-research-repo.txt
+13-macos-seccomp-strict.txt
+13-macos-seccomp-unconfined.txt
 "
 for f in results/*.txt; do
   b="${f##*/}"

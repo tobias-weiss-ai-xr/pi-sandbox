@@ -13,7 +13,8 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 HARNESS := harness
 
-.PHONY: help image verify check test probes smoke exfil sandbox example lint clean
+.PHONY: help image verify check test probes smoke exfil sandbox example probe-seccomp lint lint-meta scan clean
+
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(firstword $(MAKEFILE_LIST)) | \
@@ -46,6 +47,9 @@ sandbox: ## interactive non-root sandbox with the current dir mounted
 example: ## develop a skeleton-research repo inside the sandbox (demo, no model)
 	bash examples/research-repo/run.sh --demo
 
+probe-seccomp: ## isolate a seccomp profile + tmpfs noexec (results/13-*)
+	bash $(HARNESS)/run-seccomp-demo.sh
+
 lint: ## shellcheck (local → docker → bash -n fallback) on all scripts
 	@FILES="$$(find $(HARNESS) examples -name '*.sh' | sort)"; \
 	if command -v shellcheck >/dev/null 2>&1; then \
@@ -57,9 +61,29 @@ lint: ## shellcheck (local → docker → bash -n fallback) on all scripts
 	  echo "lint: shellcheck unavailable; bash -n only"; \
 	  for f in $$FILES; do bash -n "$$f" || exit 1; done; \
 	fi
+	@if command -v hadolint >/dev/null 2>&1; then \
+	  echo "lint: hadolint (local)"; hadolint docker/Dockerfile.pi || exit 1; \
+	elif docker info >/dev/null 2>&1; then \
+	  echo "lint: hadolint via docker"; \
+	  docker run --rm -v "$$(pwd):/w" -w /w hadolint/hadolint hadolint docker/Dockerfile.pi || exit 1; \
+	else echo "lint: hadolint skipped (unavailable)"; fi
 	@echo "lint: OK"
 
 clean: ## remove scratch outputs and the persistent agent-home volume
 	rm -rf scratch/exfil scratch/smoke-*.txt
 	docker volume rm pi-home >/dev/null 2>&1 || true
 	@echo "clean: done"
+
+lint-meta: ## lint workflows (actionlint) + YAML (yamllint) + Markdown (markdownlint) via docker
+	@echo "lint-meta: actionlint"; docker run --rm -v "$$(pwd):/w" -w /w rhysd/actionlint:latest -color || exit 1
+	@echo "lint-meta: yamllint"; docker run --rm -v "$$(pwd):/w" -w /w cytopia/yamllint:latest -c .yamllint -f parsable .github || exit 1
+	@echo "lint-meta: markdownlint (advisory)"; docker run --rm -v "$$(pwd):/w" -w /w davidanson/markdownlint-cli2:v0.17.2 || true
+	@echo "lint-meta: OK"
+
+scan: ## trivy image scan (fail on CRITICAL/HIGH with a fix available)
+	@if command -v trivy >/dev/null 2>&1; then \
+	  trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --format table pi-sandbox; \
+	elif docker info >/dev/null 2>&1; then \
+	  echo "scan: trivy via docker (expects the daemon socket); run on a native-Linux host or CI"; \
+	  docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --format table pi-sandbox; \
+	else echo "scan: trivy unavailable"; exit 2; fi

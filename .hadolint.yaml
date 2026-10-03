@@ -1,0 +1,9 @@
+# Hadolint config — deliberate deviations, each with a reason.
+#
+failure-threshold: error
+ignore:
+  # DL3008: "Pin versions in apt-get install". Deliberately NOT pinned: this is a
+  # dev/sandbox image whose Debian packages are allowed to float so a rebuild
+  # picks up security patches. The pi version (the actual supply chain risk,
+  # see FUTURE.md) IS pinned in docker/Dockerfile.pi: `pi-coding-agent@1.0.1`.
+  - DL3008

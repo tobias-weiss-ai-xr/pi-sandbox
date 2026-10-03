@@ -1,0 +1,30 @@
+
+======================================================================
+## PROBE: seccomp strict (egress-deny profile + noexec /tmp)
+======================================================================
+  whoami:                      root
+  id:                          uid=0(root) gid=0(root) groups=0(root)
+  uname:                       Linux 6.8.0-117-generic
+  Seccomp mode (0=none, 2=filter): 2
+  effective caps (CapEff):     00000000a80425fb
+
+======================================================================
+## C. writes + exec in /tmp
+======================================================================
+  /tmp write               SUCCESS
+  exec from /tmp           blocked (/probe.sh: line 49: /tmp/pi-seccomp-exec-1: Permission denied)
+
+======================================================================
+## D. network egress (node fetch; network is OPEN in both runs)
+======================================================================
+  example.com            https://example.com -> ERR EAI_AGAIN
+  anthropic              https://api.anthropic.com -> ERR EAI_AGAIN
+
+======================================================================
+## F. does the toolchain still run under the profile?
+======================================================================
+  node:                        v24.21.0 ok
+  pi version:                  1.0.1
+======================================================================
+## END PROBE: seccomp strict (egress-deny profile + noexec /tmp)
+======================================================================
