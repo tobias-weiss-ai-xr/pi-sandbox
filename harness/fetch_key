@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# fetch_key — pull ONE scoped credential from the pi-sandbox secrets broker.
+# Installed into the sandbox at /usr/local/bin/fetch_key (read-only mount).
+#
+# The broker is reachable at $BROKER_URL and gate-kept by $BROKER_TOKEN, both
+# injected by harness/broker.sh. The REAL key never sits in this container's
+# env, image layers, mounts, or `docker inspect` output — it is fetched only
+# when a tool genuinely needs it, one call at a time.
+#
+#   fetch_key                # print the credential value (to a tool, not logs)
+#   FETCH_KEY_QUIET=1 fetch_key   # suppress the safety note to stderr
+#
+# SAFETY: the value is written to stdout only — never echoed to our own logs;
+# the broker never logs bodies either.
+set -euo pipefail
+
+: "${BROKER_URL:?fetch_key: BROKER_URL not set (start via harness/broker.sh)}"
+: "${BROKER_TOKEN:?fetch_key: BROKER_TOKEN not set (start via harness/broker.sh)}"
+
+if [ "${FETCH_KEY_QUIET:-0}" != 1 ]; then
+  echo "fetch_key: granting credential to the caller — pipe it into exactly one tool." >&2
+fi
+
+exec node -e '
+  fetch(process.env.BROKER_URL, { headers: { "X-Scope-Token": process.env.BROKER_TOKEN } })
+    .then(r => { if (!r.ok) { process.stderr.write("fetch_key: broker " + r.status + " (scope denied or redeemed)\n"); process.exit(1); } return r.text(); })
+    .then(t => process.stdout.write(t));
+'
